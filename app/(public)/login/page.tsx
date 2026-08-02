@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { AuthCentered } from "@/components/layouts/auth-centered";
 import { BrandMark } from "@/components/layouts/brand-mark";
 import { SurfaceCard } from "@/components/layouts/surface-card";
+import { ThemeToggle } from "@/components/layouts/theme-toggle";
 import { LoginSessionGate } from "@/features/auth/components/login-session-gate";
 import { LoginFormSkeleton } from "@/features/auth/components/skeletons";
 import { ROUTES } from "@/constants/routes";
@@ -34,7 +35,7 @@ async function LoginGateFromParams({
  */
 export default function LoginPage({ searchParams }: LoginPageProps) {
   return (
-    <AuthCentered>
+    <AuthCentered corner={<ThemeToggle />}>
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,color-mix(in_oklch,var(--primary)_8%,transparent),transparent_55%)]"

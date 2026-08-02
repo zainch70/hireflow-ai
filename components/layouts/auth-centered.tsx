@@ -5,10 +5,16 @@ import { cn } from "@/lib/utils";
 type AuthCenteredProps = {
   children: ReactNode;
   className?: string;
+  /** Fixed to the viewport (e.g. theme toggle) — not inside the form column. */
+  corner?: ReactNode;
 };
 
 /** Shared centered auth chrome (login, errors, skeletons). */
-export function AuthCentered({ children, className }: AuthCenteredProps) {
+export function AuthCentered({
+  children,
+  className,
+  corner,
+}: AuthCenteredProps) {
   return (
     <main
       className={cn(
@@ -16,6 +22,11 @@ export function AuthCentered({ children, className }: AuthCenteredProps) {
         className,
       )}
     >
+      {corner ? (
+        <div className="absolute top-4 right-4 z-10 sm:top-6 sm:right-6">
+          {corner}
+        </div>
+      ) : null}
       <div className="relative w-full max-w-[420px] space-y-8">{children}</div>
     </main>
   );

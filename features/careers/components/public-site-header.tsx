@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 
 import { BrandMark } from "@/components/layouts/brand-mark";
 import { Container } from "@/components/layouts/container";
+import { ThemeToggle } from "@/components/layouts/theme-toggle";
 import { ROUTES } from "@/constants/routes";
 import { cn } from "@/lib/utils";
 
@@ -23,14 +24,17 @@ export function PublicSiteHeader() {
     <header className="sticky top-0 z-40 border-b border-border bg-card/90 backdrop-blur-md">
       <Container className="flex h-14 items-center justify-between gap-4">
         <BrandMark />
-        <nav aria-label="Primary" className="flex items-center gap-1 sm:gap-2">
-          <NavLink href={ROUTES.home} active={homeActive}>
-            Home
-          </NavLink>
-          <NavLink href={ROUTES.careers} active={careersActive}>
-            Careers
-          </NavLink>
-        </nav>
+        <div className="flex items-center gap-1 sm:gap-2">
+          <nav aria-label="Primary" className="flex items-center gap-1 sm:gap-2">
+            <NavLink href={ROUTES.home} active={homeActive}>
+              Home
+            </NavLink>
+            <NavLink href={ROUTES.careers} active={careersActive}>
+              Careers
+            </NavLink>
+          </nav>
+          <ThemeToggle />
+        </div>
       </Container>
     </header>
   );

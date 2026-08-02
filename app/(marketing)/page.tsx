@@ -13,14 +13,14 @@ const syne = Syne({
 export const metadata: Metadata = {
   title: "HireFlow AI",
   description:
-    "Find open roles at HireFlow AI. Browse published openings and apply with a clear, candidate-first process.",
+    "Careers at HireFlow AI. Explore open roles across engineering, product, and operations.",
   alternates: {
     canonical: env.appUrl,
   },
   openGraph: {
     title: "HireFlow AI",
     description:
-      "Open roles. A straightforward apply. Real follow-through.",
+      "Technology careers for people who ship real work. Browse open roles.",
     url: env.appUrl,
     type: "website",
   },
