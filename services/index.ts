@@ -1,6 +1,4 @@
 /**
- * Domain services (orchestration between DB, AI, storage, etc.).
- * Keep UI out of this layer.
+ * Domain services — business logic lives here, not in pages/components.
  */
-
 export {};

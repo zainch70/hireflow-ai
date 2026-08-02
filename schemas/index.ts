@@ -1,6 +1,4 @@
 /**
- * Zod validation schemas will live here.
- * Example future modules: auth, job, application, candidate.
+ * Zod schemas for forms and server actions.
  */
-
-export {};
+export * from "./auth";

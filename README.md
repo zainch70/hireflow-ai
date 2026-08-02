@@ -2,14 +2,14 @@
 
 AI-powered careers and recruitment portal. Candidates browse and apply to jobs; HR manages openings, applications, and AI-assisted screening.
 
-> **Status:** Foundation + database schema are in place. Auth UI, careers pages, dashboard, and AI flows are not built yet.
+> **Status:** Foundation, database schema, and **HR authentication** are in place. Careers UI, full dashboard features, and AI flows are not built yet.
 
 ## Tech stack
 
 - **Framework:** Next.js 15 (App Router), React 19, TypeScript
 - **UI:** Tailwind CSS, shadcn/ui, Lucide, Sonner, next-themes
 - **Data:** Supabase (Auth, Storage, PostgreSQL), Drizzle ORM
-- **Forms:** React Hook Form, Zod
+- **Forms:** React Hook Form, Zod, Server Actions
 - **AI:** Vercel AI SDK + Google Gemini
 - **Other:** TanStack Table, Recharts, pdf-parse
 - **Tooling:** ESLint, Prettier, EditorConfig
@@ -110,15 +110,69 @@ npm run db:generate
 npm run db:migrate
 ```
 
-> **Do not use `drizzle-kit push`.** It is blocked in this repo (`npm run db:push` and `npx drizzle-kit push`).
+> **Do not use `drizzle-kit push`.** It is blocked in this repo (`npm run db:push` and `npx drizzle-kit push`).  
+> Never hand-edit files under `db/migrations/**/*.sql`.
 
-### 4. Run the app
+### 4. Create an HR user (required for login)
+
+HR accounts are **not** created from the app (security). Provision them in Supabase:
+
+1. **Authentication → Users → Add user**
+   - Email + password (min 8 characters)
+   - Enable auto-confirm if available so you can sign in immediately
+2. Copy the user’s **UUID**
+3. **Table Editor → `profiles` → Insert row**
+
+| Column | Value |
+| --- | --- |
+| `id` | Auth user UUID |
+| `email` | Same email |
+| `full_name` | Display name |
+| `role` | `hr` or `admin` |
+| `is_active` | `true` |
+
+Roles: `candidate` | `hr` | `admin`. Only `hr` and `admin` can access `/hr`.
+
+### 5. Run the app
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+| URL | Purpose |
+| --- | --- |
+| [http://localhost:3000](http://localhost:3000) | Public home |
+| [http://localhost:3000/login](http://localhost:3000/login) | HR sign in |
+| [http://localhost:3000/hr](http://localhost:3000/hr) | Protected HR area (auth required) |
+
+## Authentication (for team members)
+
+### What exists
+
+- HR login at `/login`
+- Session cookies via Supabase Auth SSR
+- Middleware blocks unauthenticated `/hr/*` access
+- Dashboard layout verifies `hr` / `admin` role + `is_active`
+- Logout from the HR header
+- No public HR registration (by design)
+
+### How to test
+
+1. Create an HR user + profile (step 4 above)
+2. Sign in at `/login` → should redirect to `/hr`
+3. Open `/hr` in a private window while logged out → redirect to `/login`
+4. Click **Sign out** → session cleared, `/hr` blocked again
+5. Try a user with `role = candidate` → login rejected (no HR access)
+
+### Key files
+
+```
+features/auth/           # Login/logout UI + server actions
+lib/auth/                # Session, profile, role helpers
+app/(public)/login/      # Login page + loading/error
+app/(dashboard)/         # Protected layout + loading/error
+middleware.ts            # Session refresh + /hr guard
+```
 
 ## Scripts
 
@@ -142,26 +196,26 @@ Feature-based layout with clear separation of concerns:
 ```
 app/           # Routes & layouts (public + dashboard groups)
 components/    # Shared UI (shadcn in ui/)
-features/      # Domain modules (jobs, applications, etc.)
+features/      # Domain modules (auth, later jobs/applications)
 services/      # Business orchestration
 db/            # Drizzle client, schema, migrations
 lib/           # Infrastructure (supabase, ai, auth, errors, uploads)
 schemas/       # Zod validation
-actions/       # Server Actions
 providers/     # Theme, Supabase, toasts
 constants/     # Routes, roles, statuses
 types/         # Shared TypeScript types
-hooks/         # Shared React hooks
 ```
 
-**Guidelines**
+### Next.js conventions (follow these)
 
-- Prefer Server Components; use Server Actions where mutations fit
-- Keep AI logic in `lib/ai`
-- Keep database access in `db/` / services — not in UI
-- Colocate feature UI, actions, and hooks under `features/<name>`
-- File names: kebab-case; Next.js `page` / `layout` files use default exports
-- Never hand-edit `db/migrations/*.sql` — change `db/schema`, then `db:generate`
+- **Server Components by default**; Client Components only for interactivity
+- **Server Actions** for mutations (`features/*/actions`)
+- Use **`loading.tsx` / `error.tsx` / `Suspense`** for streaming and failure UI
+- Prefer **`getUser()`** (validated) over trusting client session alone
+- Deduplicate server reads with React **`cache()`** where helpful
+- Keep AI in `lib/ai`, DB access in `db/` / services — not in UI components
+- Colocate feature UI + actions under `features/<name>`
+- File names: kebab-case; Next.js `page` / `layout` / `loading` / `error` use default exports
 
 ## Current foundation
 
@@ -169,10 +223,9 @@ Already configured:
 
 - Next.js App Router + TypeScript + Tailwind + shadcn/ui
 - Supabase clients (browser, server, middleware, admin)
-- Drizzle schema (profiles, jobs, applications, skills, criteria, AI analyses, etc.)
+- Drizzle schema + applied migrations
+- HR authentication (login, logout, middleware, role checks)
 - Providers (theme, Supabase, toasts)
-- Auth helpers, middleware stub for `/hr/*`
-- Public and dashboard layout groups
 - Error / API response helpers
 - Upload validation stubs (PDF)
 - Gemini client factory (no prompts)
@@ -180,10 +233,10 @@ Already configured:
 
 ## Planned next phases
 
-1. Authentication (pages + HR route protection)
-2. Public careers pages
-3. HR dashboard shell
-4. Job CRUD → applications → PDF upload → AI screening
+1. Public careers pages
+2. HR dashboard shell + navigation
+3. Job CRUD → applications → PDF upload → AI screening
+4. RLS policies on Supabase tables
 
 ## License
 

@@ -10,7 +10,6 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const binDir = path.join(root, "node_modules", ".bin");
-const wrapper = path.join(root, "scripts", "drizzle-kit.mjs");
 
 if (!fs.existsSync(path.join(root, "node_modules", "drizzle-kit"))) {
   console.warn(

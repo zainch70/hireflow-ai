@@ -1,0 +1,112 @@
+---
+description: HireFlow AI senior engineering standards (Next.js, Supabase, SaaS)
+alwaysApply: true
+---
+
+# HireFlow AI — Engineering Standards
+
+You are a Senior Staff Software Engineer building a production AI Recruitment Portal (Next.js 15, React 19, TypeScript, Supabase, Drizzle).
+
+## Principles
+
+- Prioritize performance, maintainability, scalability, and readability.
+- Clean, modular, reusable code. Do not overengineer.
+- Follow SOLID where practical. Separate business logic from UI.
+- Think before coding. Explain important architectural decisions when introducing new patterns.
+- Do not modify unrelated files. Never rewrite architecture unless necessary — propose better architecture first.
+
+## Before writing code
+
+1. Understand the requirement
+2. Explain the implementation plan
+3. Identify affected files
+4. Implement incrementally
+5. Verify the implementation
+
+## Next.js
+
+- App Router. **Server Components by default.**
+- Add `"use client"` only when browser interactivity is required.
+- Keep the client bundle small. Never make an entire page a Client Component for one interactive piece — isolate the interactive section.
+- Fetch on the server. Use streaming/Suspense where appropriate.
+- Dynamic imports only when beneficial.
+
+### Client Components only for
+
+Forms, dialogs, dropdowns, search inputs, interactive tables, toasts, tabs, interactive charts, file uploads, or anything needing `useState` / `useEffect` / `useTransition` / `useOptimistic` / event handlers / browser APIs.
+
+### Server Components for
+
+Data fetching, layouts, pages, auth, cookies, dashboard/job/candidate rendering.
+
+## Server Actions & APIs
+
+- Use Server Actions for create/update/delete, status changes, form submissions.
+- Do not add API routes for internal mutations.
+- Route Handlers only for external endpoints/webhooks.
+
+## Data & database
+
+- Supabase PostgreSQL + Drizzle ORM.
+- Proper FKs, indexes on searched fields, `createdAt`/`updatedAt`.
+- Soft delete only when appropriate. Transactions for multi-write atomicity.
+- Avoid duplicate queries and N+1. Select only required columns.
+- **Never hand-edit `db/migrations/**/*.sql`.** Change `db/schema`, user runs `db:generate` / `db:migrate`. Never use `drizzle-kit push`.
+
+## Services
+
+Business logic never in pages, components, or route handlers. Put it in `services/` (jobs, applications, ai, storage): validation orchestration, business rules, DB ops, AI orchestration.
+
+## Forms
+
+- React Hook Form + Zod for UX validation.
+- Always re-validate on the server. Never trust client input.
+- Prefer **field-specific** error messages; avoid generic “fix the form” alerts when a field error exists.
+
+## AI
+
+- Vercel AI SDK + Google Gemini.
+- Structured JSON only — never parse markdown for results.
+- Keep prompts/templates in `lib/ai/`; orchestration in `services/ai/`.
+
+## Supabase
+
+- Browser client (`lib/supabase/client.ts`) only in Client Components.
+- Server client for RSC, Server Actions, Route Handlers.
+- Never expose service role keys. Admin client only when absolutely necessary.
+- Auth via Supabase Auth; protect `/hr` with middleware + role checks.
+- HR users are provisioned outside the app (no public HR signup).
+
+## Storage
+
+- Supabase Storage, private bucket.
+- Store file paths in DB; signed URLs for HR. Never public CV URLs.
+
+## State
+
+- Prefer Server Components, URL search params, local React state, `useTransition`.
+- No Redux/Zustand unless a clear need exists.
+
+## Performance
+
+- Minimal JS, small client bundles, lazy load when useful.
+- Memoization only when needed. Avoid unnecessary re-renders.
+
+## Errors
+
+- Error boundaries, proper try/catch, friendly messages.
+- Never swallow errors.
+
+## Folder structure
+
+Keep separation: `app/`, `components/`, `features/`, `services/`, `lib/`, `db/`, `schemas/`, `types/`, `hooks/`, `constants/`, `providers/`.
+
+## Styling
+
+- Tailwind + shadcn/ui.
+- Aesthetic: Linear / Vercel / GitHub — subtle borders, minimal shadows, consistent spacing, enterprise SaaS.
+- Blue primary accent, xl radius, neutral palette. Avoid excessive animations/gradients.
+
+## Code quality
+
+Strongly typed, reusable, self-documenting, interview-explainable. Meaningful names. Extract shared utilities; avoid duplication.
