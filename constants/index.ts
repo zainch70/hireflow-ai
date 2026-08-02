@@ -5,3 +5,8 @@ export {
   type ApplicationStatus,
 } from "./application-status";
 export { JOB_STATUS, type JobStatus } from "./job-status";
+export {
+  EMPLOYMENT_TYPES,
+  EMPLOYMENT_TYPE_LABELS,
+  type EmploymentType,
+} from "./employment-type";

@@ -2,7 +2,7 @@
 
 AI-powered careers and recruitment portal. Candidates browse and apply to jobs; HR manages openings, applications, and AI-assisted screening.
 
-> **Status:** Foundation, database schema, and **HR authentication** are in place. Careers UI, full dashboard features, and AI flows are not built yet.
+> **Status:** Foundation, database schema, **HR authentication**, and **Job Opening Management** are in place. Public careers UI, candidate applications, and AI flows are not built yet.
 
 ## Tech stack
 
@@ -141,9 +141,10 @@ npm run dev
 
 | URL | Purpose |
 | --- | --- |
-| [http://localhost:3000](http://localhost:3000) | Public home |
+| [http://localhost:3000](http://localhost:3000) | Public home (careers listing not built yet) |
 | [http://localhost:3000/login](http://localhost:3000/login) | HR sign in |
-| [http://localhost:3000/hr](http://localhost:3000/hr) | Protected HR area (auth required) |
+| [http://localhost:3000/hr](http://localhost:3000/hr) | HR overview |
+| [http://localhost:3000/hr/jobs](http://localhost:3000/hr/jobs) | Manage job openings |
 
 ## Authentication (for team members)
 
@@ -174,6 +175,31 @@ app/(dashboard)/         # Protected layout + loading/error
 middleware.ts            # Session refresh + /hr guard
 ```
 
+## Job Opening Management (for team members)
+
+### What exists
+
+- Create / edit / delete jobs from `/hr/jobs`
+- Publish → **Published**, Unpublish → **Draft**, Close → **Closed**
+- Fields: title, department, employment type, experience, location, description, requirements, optional salary
+- Server Actions + Zod validation + toast feedback
+- Publish status is HR-only for now — **no public careers listing yet**
+
+### How to test
+
+1. Sign in as HR → open **Jobs**
+2. Create a job → starts as **Draft**
+3. Use the ⋯ menu to Publish / Unpublish / Close / Delete
+4. Confirm status badges update on `/hr/jobs` and counts on `/hr`
+
+### Key files
+
+```
+features/jobs/           # Form, table, actions, status UI
+services/jobs/           # CRUD + status transitions
+schemas/jobs.ts          # Zod job form schema
+app/(dashboard)/hr/jobs/ # List / create / edit pages
+```
 ## Scripts
 
 | Command | Description |
@@ -196,7 +222,7 @@ Feature-based layout with clear separation of concerns:
 ```
 app/           # Routes & layouts (public + dashboard groups)
 components/    # Shared UI (shadcn in ui/)
-features/      # Domain modules (auth, later jobs/applications)
+features/      # Domain modules (auth, jobs; later applications)
 services/      # Business orchestration
 db/            # Drizzle client, schema, migrations
 lib/           # Infrastructure (supabase, ai, auth, errors, uploads)
@@ -205,7 +231,6 @@ providers/     # Theme, Supabase, toasts
 constants/     # Routes, roles, statuses
 types/         # Shared TypeScript types
 ```
-
 ### Next.js conventions (follow these)
 
 - **Server Components by default**; Client Components only for interactivity
@@ -225,6 +250,7 @@ Already configured:
 - Supabase clients (browser, server, middleware, admin)
 - Drizzle schema + applied migrations
 - HR authentication (login, logout, middleware, role checks)
+- Job Opening Management (CRUD + publish / unpublish / close)
 - Providers (theme, Supabase, toasts)
 - Error / API response helpers
 - Upload validation stubs (PDF)
@@ -233,11 +259,10 @@ Already configured:
 
 ## Planned next phases
 
-1. Public careers pages
-2. HR dashboard shell + navigation
-3. Job CRUD → applications → PDF upload → AI screening
+1. Public careers pages (list / detail for **Published** jobs)
+2. Candidate applications + PDF upload
+3. AI screening / shortlisting
 4. RLS policies on Supabase tables
-
 ## License
 
 Private — all rights reserved.

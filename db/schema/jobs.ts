@@ -41,6 +41,8 @@ export const jobs = pgTable(
     description: text("description").notNull(),
     responsibilities: text("responsibilities"),
     requirements: text("requirements"),
+    /** Human-readable experience requirement, e.g. "3+ years". */
+    experience: text("experience"),
     salaryMin: integer("salary_min"),
     salaryMax: integer("salary_max"),
     salaryCurrency: text("salary_currency").default("USD"),
