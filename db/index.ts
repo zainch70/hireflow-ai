@@ -5,9 +5,9 @@ import * as schema from "./schema";
 
 /**
  * Drizzle database client.
- * Schemas will be defined in /db/schema — none yet.
- *
- * Lazy init so the app can boot before DATABASE_URL is configured.
+ * Schema lives in /db/schema. Apply changes with:
+ *   npm run db:generate && npm run db:migrate
+ * Never use drizzle-kit push.
  */
 function createDb() {
   const connectionString = process.env.DATABASE_URL;

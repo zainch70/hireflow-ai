@@ -1,6 +1,6 @@
 /**
  * Public route group layout.
- * Shared chrome for careers / marketing pages will live here.
+ * Careers pages bring their own PublicSiteShell; login keeps AuthCentered.
  */
 export default function PublicLayout({
   children,

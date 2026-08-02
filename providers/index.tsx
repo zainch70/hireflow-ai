@@ -3,7 +3,6 @@
 import type { ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
-import { SupabaseProvider } from "@/providers/supabase-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
 
 export function AppProviders({ children }: { children: ReactNode }) {
@@ -14,10 +13,8 @@ export function AppProviders({ children }: { children: ReactNode }) {
       enableSystem
       disableTransitionOnChange
     >
-      <SupabaseProvider>
-        {children}
-        <Toaster richColors closeButton position="top-right" />
-      </SupabaseProvider>
+      {children}
+      <Toaster richColors closeButton position="top-right" />
     </ThemeProvider>
   );
 }

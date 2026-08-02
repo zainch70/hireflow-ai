@@ -1,6 +1,5 @@
 /**
- * Feature modules (careers, jobs, applications, auth, etc.).
- * Each feature should own its components, actions, and hooks.
+ * Feature modules.
+ * Prefer deep imports from features/<name>/... to avoid mixed server/client barrels.
  */
-
 export {};

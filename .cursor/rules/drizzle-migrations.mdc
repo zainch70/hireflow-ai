@@ -1,0 +1,13 @@
+---
+description: Drizzle migration workflow — never hand-edit SQL
+alwaysApply: true
+---
+
+# Drizzle migrations
+
+- **Never** manually create, edit, or patch files under `db/migrations/**/*.sql`.
+- Schema changes belong only in `db/schema/**`.
+- The user owns generating and applying migrations (`npm run db:generate`, `npm run db:migrate`).
+- Agents may **delete** migration files if the user asks or a clean regenerate is required — do not rewrite SQL by hand.
+- **Never** run `drizzle-kit push` / `npm run db:push` (blocked in this repo).
+- Do not append custom SQL (e.g. `auth.users` FKs) into generated migrations; document it for the user to add via their own migration/SQL if needed.
