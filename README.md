@@ -174,13 +174,20 @@ Allowed moves are defined in `services/applications/transitions.ts`.
 
 Follow these steps in order the first time.
 
-### Step 1 — Install packages
+### Step 1 — Clone the repository
+
+```bash
+git clone https://github.com/zainch70/hireflow-ai.git
+cd hireflow-ai
+```
+
+### Step 2 — Install packages
 
 ```bash
 npm install
 ```
 
-### Step 2 — Create your env file
+### Step 3 — Create your env file
 
 ```bash
 cp .env.example .env.local
@@ -228,7 +235,7 @@ If the password has special characters (`@`, `#`, `%`, `/`), URL-encode them.
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Required. Create at [Google AI Studio](https://aistudio.google.com/apikey) |
 | `GEMINI_API_KEYS` | Optional. Extra keys, comma-separated, if free-tier quota runs out |
 
-### Step 3 — Apply database migrations
+### Step 4 — Apply database migrations
 
 ```bash
 npm run db:migrate
@@ -244,13 +251,13 @@ npm run db:seed
 
 This loads sample jobs, applications, notes, and AI scores (safe to re-run).
 
-### Step 4 — Create the resumes bucket (one time)
+### Step 5 — Create the resumes bucket (one time)
 
 1. Supabase → **Storage** → **New bucket**
 2. Name: `resumes`
 3. Keep it **Private** (do not make it public)
 
-### Step 5 — Create an HR login
+### Step 6 — Create an HR login
 
 The app does **not** let people register themselves as HR. Create the user in Supabase:
 
@@ -270,7 +277,7 @@ The app does **not** let people register themselves as HR. Create the user in Su
 
 Only `hr` and `admin` can open `/hr`. A `candidate` role is blocked from the dashboard.
 
-### Step 6 — Start the app
+### Step 7 — Start the app
 
 ```bash
 npm run dev
