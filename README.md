@@ -2,7 +2,7 @@
 
 AI-powered careers and recruitment portal. Candidates browse and apply to jobs; HR manages openings, applications, and AI-assisted screening.
 
-> **Status:** Foundation, database schema, **HR authentication**, **Job Opening Management**, **public Careers**, **Candidate Applications**, **secure PDF resume upload**, and **PDF text extraction** are in place. AI flows are not built yet.
+> **Status:** Foundation, database schema, **HR authentication**, **HR Dashboard** (Overview, Jobs, Applications, Statistics with TanStack tables), **Job Opening Management**, **public Careers**, **Candidate Applications**, **secure PDF resume upload**, and **PDF text extraction** (with Gemini OCR fallback for scanned PDFs) are in place. AI screening / shortlisting is not built yet.
 
 ## Tech stack
 
@@ -144,9 +144,10 @@ npm run dev
 | [http://localhost:3000](http://localhost:3000) | Public home |
 | [http://localhost:3000/careers](http://localhost:3000/careers) | Public careers (published jobs) |
 | [http://localhost:3000/login](http://localhost:3000/login) | HR sign in |
-| [http://localhost:3000/hr](http://localhost:3000/hr) | HR overview |
-| [http://localhost:3000/hr/jobs](http://localhost:3000/hr/jobs) | Manage job openings |
-| [http://localhost:3000/hr/applications](http://localhost:3000/hr/applications) | Review applications / open resumes |
+| [http://localhost:3000/hr](http://localhost:3000/hr) | HR overview (KPIs + recent activity) |
+| [http://localhost:3000/hr/jobs](http://localhost:3000/hr/jobs) | Jobs table (search / filter / sort / pagination) |
+| [http://localhost:3000/hr/applications](http://localhost:3000/hr/applications) | Applications table + signed resume links |
+| [http://localhost:3000/hr/statistics](http://localhost:3000/hr/statistics) | Pipeline charts (Recharts) |
 
 ## Authentication (for team members)
 
@@ -175,6 +176,28 @@ lib/auth/                # Session, profile, role helpers
 app/(public)/login/      # Login page + loading/error
 app/(dashboard)/         # Protected layout + loading/error
 middleware.ts            # Session refresh + /hr guard
+```
+
+## HR Dashboard (for team members)
+
+### What exists
+
+- Top-nav dashboard shell: Overview · Jobs · Applications · Statistics (active link highlight)
+- **Overview** — job/application KPIs + recent lists
+- **Jobs / Applications** — TanStack Table with search, status filters, sorting, pagination (responsive cards on mobile)
+- **Statistics** — Recharts: jobs/applications by status, submissions over time, top jobs by volume
+- Aggregations via `services/dashboard` (SQL `count` / `groupBy`) — no AI
+
+### Key files
+
+```
+app/(dashboard)/hr/              # Overview, jobs, applications, statistics pages
+features/auth/dashboard-nav.tsx  # Active nav links
+features/jobs/                   # Jobs TanStack table + CRUD actions
+features/applications/           # Applications TanStack table + resume download
+features/dashboard/              # Recharts chart components
+components/data-table/           # Shared TanStack toolbar / pagination / headers
+services/dashboard/              # getHrDashboardStats
 ```
 
 ## Job Opening Management (for team members)
@@ -336,15 +359,17 @@ Already configured:
 - Supabase clients (browser, server, middleware, admin)
 - Drizzle schema + applied migrations
 - HR authentication (login, logout, middleware, role checks)
+- HR Dashboard (Overview, Jobs, Applications, Statistics)
 - Job Opening Management (CRUD + publish / unpublish / close)
 - Public Careers pages (published list, detail, search/filter)
 - Candidate applications (form + private PDF resume upload + text extraction)
-- HR applications list with signed resume links
+- HR applications list with TanStack Table + signed resume links
 - Providers (theme, Supabase, toasts)
 - Error / API response helpers
 - Upload validation (PDF type/size/magic bytes)
 - PDF text extraction via pdf-parse + Gemini OCR fallback (`resume_text`)
-- Gemini client factory (no prompts)
+- Gemini client factory + resume OCR prompt (`lib/ai/ocr-resume.ts`)
+- Shared DataTable primitives + Recharts stats
 - Routes, roles, and status constants
 
 ## Planned next phases

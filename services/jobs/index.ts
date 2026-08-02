@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { and, asc, desc, eq, ilike, isNotNull, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, isNotNull, or } from "drizzle-orm";
 
 import { db } from "@/db";
 import { jobs } from "@/db/schema";
@@ -231,12 +231,33 @@ export async function closeJob(jobId: string): Promise<Job> {
 }
 
 export async function countJobsByStatus(status: JobStatus): Promise<number> {
-  const rows = await db
-    .select({ id: jobs.id })
+  const [row] = await db
+    .select({ value: count() })
     .from(jobs)
     .where(eq(jobs.status, status));
 
-  return rows.length;
+  return Number(row?.value ?? 0);
+}
+
+export async function countJobsGroupedByStatus(): Promise<
+  Array<{ status: JobStatus; count: number }>
+> {
+  const rows = await db
+    .select({
+      status: jobs.status,
+      count: count(),
+    })
+    .from(jobs)
+    .groupBy(jobs.status);
+
+  return rows.map((row) => ({
+    status: row.status as JobStatus,
+    count: Number(row.count),
+  }));
+}
+
+export async function listRecentJobs(limit = 5): Promise<Job[]> {
+  return db.select().from(jobs).orderBy(desc(jobs.updatedAt)).limit(limit);
 }
 
 export async function listJobsByStatus(status: JobStatus): Promise<Job[]> {

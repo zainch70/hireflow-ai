@@ -10,6 +10,7 @@ export const ROUTES = {
     root: "/hr",
     jobs: "/hr/jobs",
     applications: "/hr/applications",
+    statistics: "/hr/statistics",
     candidates: "/hr/candidates",
     settings: "/hr/settings",
   },

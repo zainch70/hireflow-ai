@@ -1,4 +1,4 @@
-import { desc, eq, inArray } from "drizzle-orm";
+import { count, desc, eq, gte, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
@@ -34,12 +34,27 @@ export type Application = typeof applications.$inferSelect;
 
 export type HrApplicationListItem = {
   id: string;
+  jobId: string;
   fullName: string;
   email: string;
   status: Application["status"];
   resumePath: string | null;
   resumeFileName: string | null;
   createdAt: Date;
+  jobTitle: string;
+  jobSlug: string;
+};
+
+/** Plain serializable row for client DataTables. */
+export type HrApplicationTableRow = {
+  id: string;
+  jobId: string;
+  fullName: string;
+  email: string;
+  status: Application["status"];
+  resumePath: string | null;
+  resumeFileName: string | null;
+  createdAt: string;
   jobTitle: string;
   jobSlug: string;
 };
@@ -148,6 +163,7 @@ export async function listApplicationsForHr(): Promise<HrApplicationListItem[]> 
   return db
     .select({
       id: applications.id,
+      jobId: applications.jobId,
       fullName: applications.fullName,
       email: applications.email,
       status: applications.status,
@@ -160,6 +176,115 @@ export async function listApplicationsForHr(): Promise<HrApplicationListItem[]> 
     .from(applications)
     .innerJoin(jobs, eq(applications.jobId, jobs.id))
     .orderBy(desc(applications.createdAt));
+}
+
+export function toHrApplicationTableRows(
+  rows: HrApplicationListItem[],
+): HrApplicationTableRow[] {
+  return rows.map((row) => ({
+    id: row.id,
+    jobId: row.jobId,
+    fullName: row.fullName,
+    email: row.email,
+    status: row.status,
+    resumePath: row.resumePath,
+    resumeFileName: row.resumeFileName,
+    createdAt: row.createdAt.toISOString(),
+    jobTitle: row.jobTitle,
+    jobSlug: row.jobSlug,
+  }));
+}
+
+export async function listRecentApplicationsForHr(
+  limit = 5,
+): Promise<HrApplicationListItem[]> {
+  return db
+    .select({
+      id: applications.id,
+      jobId: applications.jobId,
+      fullName: applications.fullName,
+      email: applications.email,
+      status: applications.status,
+      resumePath: applications.resumePath,
+      resumeFileName: applications.resumeFileName,
+      createdAt: applications.createdAt,
+      jobTitle: jobs.title,
+      jobSlug: jobs.slug,
+    })
+    .from(applications)
+    .innerJoin(jobs, eq(applications.jobId, jobs.id))
+    .orderBy(desc(applications.createdAt))
+    .limit(limit);
+}
+
+export async function countApplicationsGroupedByStatus(): Promise<
+  Array<{ status: Application["status"]; count: number }>
+> {
+  const rows = await db
+    .select({
+      status: applications.status,
+      count: count(),
+    })
+    .from(applications)
+    .groupBy(applications.status);
+
+  return rows.map((row) => ({
+    status: row.status,
+    count: Number(row.count),
+  }));
+}
+
+export async function countApplicationsByJob(
+  limit = 8,
+): Promise<Array<{ jobId: string; jobTitle: string; count: number }>> {
+  const rows = await db
+    .select({
+      jobId: applications.jobId,
+      jobTitle: jobs.title,
+      count: count(),
+    })
+    .from(applications)
+    .innerJoin(jobs, eq(applications.jobId, jobs.id))
+    .groupBy(applications.jobId, jobs.title)
+    .orderBy(desc(count()))
+    .limit(limit);
+
+  return rows.map((row) => ({
+    jobId: row.jobId,
+    jobTitle: row.jobTitle,
+    count: Number(row.count),
+  }));
+}
+
+/** Daily application counts for the last `days` days (inclusive of today). */
+export async function countApplicationsOverTime(
+  days = 30,
+): Promise<Array<{ date: string; count: number }>> {
+  const since = new Date();
+  since.setHours(0, 0, 0, 0);
+  since.setDate(since.getDate() - (days - 1));
+
+  const rows = await db
+    .select({
+      date: sql<string>`to_char(date_trunc('day', ${applications.createdAt}), 'YYYY-MM-DD')`,
+      count: count(),
+    })
+    .from(applications)
+    .where(gte(applications.createdAt, since))
+    .groupBy(sql`date_trunc('day', ${applications.createdAt})`)
+    .orderBy(sql`date_trunc('day', ${applications.createdAt})`);
+
+  const byDate = new Map(rows.map((row) => [row.date, Number(row.count)]));
+  const series: Array<{ date: string; count: number }> = [];
+
+  for (let i = 0; i < days; i += 1) {
+    const day = new Date(since);
+    day.setDate(since.getDate() + i);
+    const key = day.toISOString().slice(0, 10);
+    series.push({ date: key, count: byDate.get(key) ?? 0 });
+  }
+
+  return series;
 }
 
 /** HR-only: short-lived signed URL for a private resume. */
