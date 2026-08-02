@@ -15,7 +15,12 @@ export const ROUTES = {
   },
 } as const;
 
+export function careersJobPath(slug: string) {
+  return `${ROUTES.careers}/${slug}` as const;
+}
+
 export type AppRoute =
   | (typeof ROUTES)[Exclude<keyof typeof ROUTES, "dashboard" | "auth">]
   | (typeof ROUTES.dashboard)[keyof typeof ROUTES.dashboard]
-  | (typeof ROUTES.auth)[keyof typeof ROUTES.auth];
+  | (typeof ROUTES.auth)[keyof typeof ROUTES.auth]
+  | ReturnType<typeof careersJobPath>;

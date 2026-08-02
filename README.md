@@ -2,7 +2,7 @@
 
 AI-powered careers and recruitment portal. Candidates browse and apply to jobs; HR manages openings, applications, and AI-assisted screening.
 
-> **Status:** Foundation, database schema, **HR authentication**, and **Job Opening Management** are in place. Public careers UI, candidate applications, and AI flows are not built yet.
+> **Status:** Foundation, database schema, **HR authentication**, **Job Opening Management**, and **public Careers** (published jobs list + detail) are in place. Candidate applications and AI flows are not built yet.
 
 ## Tech stack
 
@@ -141,7 +141,8 @@ npm run dev
 
 | URL | Purpose |
 | --- | --- |
-| [http://localhost:3000](http://localhost:3000) | Public home (careers listing not built yet) |
+| [http://localhost:3000](http://localhost:3000) | Public home |
+| [http://localhost:3000/careers](http://localhost:3000/careers) | Public careers (published jobs) |
 | [http://localhost:3000/login](http://localhost:3000/login) | HR sign in |
 | [http://localhost:3000/hr](http://localhost:3000/hr) | HR overview |
 | [http://localhost:3000/hr/jobs](http://localhost:3000/hr/jobs) | Manage job openings |
@@ -183,7 +184,7 @@ middleware.ts            # Session refresh + /hr guard
 - Publish → **Published**, Unpublish → **Draft**, Close → **Closed**
 - Fields: title, department, employment type, experience, location, description, requirements, optional salary
 - Server Actions + Zod validation + toast feedback
-- Publish status is HR-only for now — **no public careers listing yet**
+- Published jobs appear on the public **Careers** pages
 
 ### How to test
 
@@ -191,16 +192,31 @@ middleware.ts            # Session refresh + /hr guard
 2. Create a job → starts as **Draft**
 3. Use the ⋯ menu to Publish / Unpublish / Close / Delete
 4. Confirm status badges update on `/hr/jobs` and counts on `/hr`
+5. Open `/careers` (logged out) → only **Published** jobs show
 
 ### Key files
 
 ```
 features/jobs/           # Form, table, actions, status UI
-services/jobs/           # CRUD + status transitions
+services/jobs/           # CRUD + status transitions + public queries
 schemas/jobs.ts          # Zod job form schema
 app/(dashboard)/hr/jobs/ # List / create / edit pages
 ```
-## Scripts
+
+## Public Careers (for team members)
+
+### What exists
+
+- `/careers` lists **published** jobs only (search + filters)
+- `/careers/[slug]` job detail with SEO metadata + JobPosting JSON-LD
+- Apply button present (toast placeholder — no application form yet)
+
+### Key files
+
+```
+features/careers/        # Cards, filters, public shell, apply CTA
+app/(public)/careers/    # List + detail routes
+```## Scripts
 
 | Command | Description |
 | --- | --- |
@@ -222,7 +238,7 @@ Feature-based layout with clear separation of concerns:
 ```
 app/           # Routes & layouts (public + dashboard groups)
 components/    # Shared UI (shadcn in ui/)
-features/      # Domain modules (auth, jobs; later applications)
+features/      # Domain modules (auth, jobs, careers; later applications)
 services/      # Business orchestration
 db/            # Drizzle client, schema, migrations
 lib/           # Infrastructure (supabase, ai, auth, errors, uploads)
@@ -230,8 +246,7 @@ schemas/       # Zod validation
 providers/     # Theme, Supabase, toasts
 constants/     # Routes, roles, statuses
 types/         # Shared TypeScript types
-```
-### Next.js conventions (follow these)
+```### Next.js conventions (follow these)
 
 - **Server Components by default**; Client Components only for interactivity
 - **Server Actions** for mutations (`features/*/actions`)
@@ -251,6 +266,7 @@ Already configured:
 - Drizzle schema + applied migrations
 - HR authentication (login, logout, middleware, role checks)
 - Job Opening Management (CRUD + publish / unpublish / close)
+- Public Careers pages (published list, detail, search/filter)
 - Providers (theme, Supabase, toasts)
 - Error / API response helpers
 - Upload validation stubs (PDF)
@@ -259,10 +275,8 @@ Already configured:
 
 ## Planned next phases
 
-1. Public careers pages (list / detail for **Published** jobs)
-2. Candidate applications + PDF upload
-3. AI screening / shortlisting
-4. RLS policies on Supabase tables
-## License
+1. Candidate applications + PDF upload
+2. AI screening / shortlisting
+3. RLS policies on Supabase tables## License
 
 Private — all rights reserved.
