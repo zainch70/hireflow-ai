@@ -229,6 +229,14 @@ npm run db:migrate
 
 You should see that the database is reachable and migrations applied successfully.
 
+**Optional demo data** (after an HR profile exists):
+
+```bash
+npm run db:seed
+```
+
+This loads sample jobs, applications, notes, and AI scores (safe to re-run).
+
 ### Step 4 — Create the resumes bucket (one time)
 
 1. Supabase → **Storage** → **New bucket**
@@ -281,6 +289,8 @@ Then open:
 | `npm run start` | Run the production build |
 | `npm run typecheck` | Check TypeScript |
 | `npm run lint` | Run ESLint |
+| `npm run db:migrate` | Apply SQL migrations |
+| `npm run db:seed` | Load demo jobs / applications / AI scores |
 | `npm run db:studio` | Open Drizzle Studio to browse tables |
 
 ### Quick local test checklist
