@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import { BrandMark } from "@/components/layouts/brand-mark";
 import { Container } from "@/components/layouts/container";
+import { ThemeToggle } from "@/components/layouts/theme-toggle";
 import { DashboardNav } from "@/features/auth/components/dashboard-nav";
 import { LogoutButton } from "@/features/auth/components/logout-button";
 import { requireHrProfile } from "@/lib/auth";
@@ -27,8 +28,9 @@ function DashboardChrome({
             <DashboardNav className="hidden items-center gap-1 sm:flex" />
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {userSlot}
+            <ThemeToggle />
             <LogoutButton />
           </div>
         </Container>
