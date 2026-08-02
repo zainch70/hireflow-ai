@@ -7,6 +7,9 @@ import { ROUTES } from "@/constants/routes";
  *
  * Cached loaders must return JSON-safe values (ISO date strings, not `Date`).
  * See `lib/dates.ts` — cache hits revive timestamps as strings.
+ *
+ * Mutations must call the helpers below so tags + routes stay fresh.
+ * Soft-nav client cache (`staleTimes`) is also cleared for revalidated paths.
  */
 export const CACHE_TAGS = {
   jobs: "jobs",
@@ -24,28 +27,35 @@ export function revalidateCacheTags(...tags: CacheTag[]) {
   }
 }
 
-/** After job mutations — lists, overview, careers. */
+/** Public careers tree (list + detail + apply). */
+function revalidateCareersTree() {
+  revalidatePath(ROUTES.careers, "layout");
+}
+
+/** After job mutations — HR lists, overview, stats, and public careers. */
 export function revalidateAfterJobChange(jobId?: string) {
   revalidateCacheTags(
     CACHE_TAGS.jobs,
+    CACHE_TAGS.applications,
     CACHE_TAGS.dashboard,
     CACHE_TAGS.careers,
   );
   revalidatePath(ROUTES.dashboard.jobs);
+  revalidatePath(ROUTES.dashboard.applications);
   revalidatePath(ROUTES.dashboard.root);
   revalidatePath(ROUTES.dashboard.statistics);
-  revalidatePath(ROUTES.careers);
+  revalidateCareersTree();
   if (jobId) {
     revalidatePath(`${ROUTES.dashboard.jobs}/${jobId}/edit`);
   }
 }
 
-/** After application / status / note changes. */
+/** After application / status / note / public submit. */
 export function revalidateAfterApplicationChange(applicationId?: string) {
   revalidateCacheTags(
     CACHE_TAGS.applications,
     CACHE_TAGS.dashboard,
-    CACHE_TAGS.careers,
+    CACHE_TAGS.ai,
   );
   revalidatePath(ROUTES.dashboard.applications);
   revalidatePath(ROUTES.dashboard.root);

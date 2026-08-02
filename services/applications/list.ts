@@ -139,7 +139,12 @@ export async function listApplicationsForHr(
     ],
     {
       revalidate: 30,
-      tags: [CACHE_TAGS.applications, CACHE_TAGS.dashboard, CACHE_TAGS.ai],
+      tags: [
+        CACHE_TAGS.applications,
+        CACHE_TAGS.jobs,
+        CACHE_TAGS.dashboard,
+        CACHE_TAGS.ai,
+      ],
     },
   )();
 }
