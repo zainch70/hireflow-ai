@@ -36,6 +36,7 @@ export const workplaceTypeEnum = pgEnum("workplace_type", [
 export const applicationStatusEnum = pgEnum("application_status", [
   "submitted",
   "under_review",
+  "on_hold",
   "shortlisted",
   "interview",
   "offered",

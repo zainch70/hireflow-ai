@@ -20,6 +20,20 @@ export function duplicateApplicationError() {
   });
 }
 
+export function applicationNotFoundError() {
+  return new AppError("Application not found", {
+    code: "APPLICATION_NOT_FOUND",
+    statusCode: 404,
+  });
+}
+
+export function invalidApplicationTransitionError(from: string, to: string) {
+  return new AppError(`Cannot change status from ${from} to ${to}`, {
+    code: "INVALID_APPLICATION_TRANSITION",
+    statusCode: 400,
+  });
+}
+
 export function isUniqueViolation(error: unknown): boolean {
   if (!error || typeof error !== "object") {
     return false;

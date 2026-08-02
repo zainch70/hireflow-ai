@@ -8,12 +8,14 @@ import { applications } from "./applications";
 import { applicationEducation } from "./application-education";
 import { applicationSkills } from "./application-skills";
 import { applicationNotes } from "./application-notes";
+import { applicationStatusHistory } from "./application-status-history";
 import { aiAnalyses } from "./ai-analyses";
 
 export const profilesRelations = relations(profiles, ({ many }) => ({
   postedJobs: many(jobs),
   applications: many(applications),
   authoredNotes: many(applicationNotes),
+  statusChanges: many(applicationStatusHistory),
 }));
 
 export const skillsRelations = relations(skills, ({ many }) => ({
@@ -58,6 +60,7 @@ export const applicationsRelations = relations(
     education: many(applicationEducation),
     skills: many(applicationSkills),
     notes: many(applicationNotes),
+    statusHistory: many(applicationStatusHistory),
     aiAnalyses: many(aiAnalyses),
   }),
 );
@@ -95,6 +98,20 @@ export const applicationNotesRelations = relations(
     }),
     author: one(profiles, {
       fields: [applicationNotes.authorId],
+      references: [profiles.id],
+    }),
+  }),
+);
+
+export const applicationStatusHistoryRelations = relations(
+  applicationStatusHistory,
+  ({ one }) => ({
+    application: one(applications, {
+      fields: [applicationStatusHistory.applicationId],
+      references: [applications.id],
+    }),
+    changedBy: one(profiles, {
+      fields: [applicationStatusHistory.changedById],
       references: [profiles.id],
     }),
   }),

@@ -2,7 +2,7 @@
 
 AI-powered careers and recruitment portal. Candidates browse and apply to jobs; HR manages openings, applications, and AI-assisted screening.
 
-> **Status:** Foundation, database schema, **HR authentication**, **HR Dashboard** (Overview, Jobs, Applications, Statistics with TanStack tables), **Job Opening Management**, **public Careers**, **Candidate Applications**, **secure PDF resume upload**, and **PDF text extraction** (with Gemini OCR fallback for scanned PDFs) are in place. AI screening / shortlisting is not built yet.
+> **Status:** Foundation, database schema, **HR authentication**, **HR Dashboard** (Overview, Jobs, Applications, Statistics with TanStack tables), **Candidate management** (review / status history / notes), **Job Opening Management**, **public Careers**, **Candidate Applications**, **secure PDF resume upload**, and **PDF text extraction** (with Gemini OCR fallback for scanned PDFs) are in place. AI screening / shortlisting is not built yet.
 
 ## Tech stack
 
@@ -147,6 +147,7 @@ npm run dev
 | [http://localhost:3000/hr](http://localhost:3000/hr) | HR overview (KPIs + recent activity) |
 | [http://localhost:3000/hr/jobs](http://localhost:3000/hr/jobs) | Jobs table (search / filter / sort / pagination) |
 | [http://localhost:3000/hr/applications](http://localhost:3000/hr/applications) | Applications table + signed resume links |
+| [http://localhost:3000/hr/applications/[id]](http://localhost:3000/hr/applications) | Candidate review (status, history, notes) |
 | [http://localhost:3000/hr/statistics](http://localhost:3000/hr/statistics) | Pipeline charts (Recharts) |
 
 ## Authentication (for team members)
@@ -194,10 +195,50 @@ middleware.ts            # Session refresh + /hr guard
 app/(dashboard)/hr/              # Overview, jobs, applications, statistics pages
 features/auth/dashboard-nav.tsx  # Active nav links
 features/jobs/                   # Jobs TanStack table + CRUD actions
-features/applications/           # Applications TanStack table + resume download
+features/applications/           # Applications table, review UI, resume download
 features/dashboard/              # Recharts chart components
 components/data-table/           # Shared TanStack toolbar / pagination / headers
 services/dashboard/              # getHrDashboardStats
+```
+
+## Candidate management (for team members)
+
+### What exists
+
+- Application detail at `/hr/applications/[id]`
+- HR status actions: Review, Hold, Reject, Interview, Select, Offer, Hire (guarded transitions)
+- Status history in `application_status_history`
+- Internal notes on `application_notes` (optional note on status change)
+- Server Actions: `updateApplicationStatusAction`, `addApplicationNoteAction`
+- List/overview candidate names link to the review page
+
+### Status mapping
+
+| Action | DB value |
+| --- | --- |
+| Review | `under_review` |
+| Hold | `on_hold` |
+| Select | `shortlisted` |
+| Interview / Offer / Hire / Reject | matching enum values |
+
+### Schema / migrate
+
+After pulling schema changes (`on_hold` + `application_status_history`):
+
+```bash
+npm run db:generate
+npm run db:migrate
+```
+
+### Key files
+
+```
+app/(dashboard)/hr/applications/[applicationId]/
+features/applications/components/application-status-*.tsx
+features/applications/components/application-notes-panel.tsx
+features/applications/actions/management.actions.ts
+services/applications/transitions.ts
+db/schema/application-status-history.ts
 ```
 
 ## Job Opening Management (for team members)
@@ -360,6 +401,7 @@ Already configured:
 - Drizzle schema + applied migrations
 - HR authentication (login, logout, middleware, role checks)
 - HR Dashboard (Overview, Jobs, Applications, Statistics)
+- Candidate management (status transitions, history, notes)
 - Job Opening Management (CRUD + publish / unpublish / close)
 - Public Careers pages (published list, detail, search/filter)
 - Candidate applications (form + private PDF resume upload + text extraction)
@@ -374,7 +416,7 @@ Already configured:
 
 ## Planned next phases
 
-1. Richer HR application detail / review workflow
+1. Richer candidate review polish (bulk actions, filters by hold, etc.)
 2. AI screening / shortlisting (uses stored `resume_text`)
 3. RLS policies on Supabase tables (and Storage policies if needed)
 

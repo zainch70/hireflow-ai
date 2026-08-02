@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { APPLICATION_STATUS } from "@/constants/application-status";
 import { EDUCATION_LEVELS } from "@/constants/education-level";
 
 const educationLevelValues = [
@@ -180,3 +181,46 @@ export const applicationFormSchema = z.object({
 
 export type ApplicationFormValues = z.input<typeof applicationFormSchema>;
 export type ApplicationFormInput = z.output<typeof applicationFormSchema>;
+
+const applicationStatusValues = [
+  APPLICATION_STATUS.SUBMITTED,
+  APPLICATION_STATUS.UNDER_REVIEW,
+  APPLICATION_STATUS.ON_HOLD,
+  APPLICATION_STATUS.SHORTLISTED,
+  APPLICATION_STATUS.INTERVIEW,
+  APPLICATION_STATUS.OFFERED,
+  APPLICATION_STATUS.HIRED,
+  APPLICATION_STATUS.REJECTED,
+  APPLICATION_STATUS.WITHDRAWN,
+] as const;
+
+export const applicationIdSchema = z.object({
+  applicationId: z.string().uuid("Invalid application id"),
+});
+
+export const updateApplicationStatusSchema = z.object({
+  applicationId: z.string().uuid("Invalid application id"),
+  status: z.enum(applicationStatusValues, {
+    message: "Select a valid status",
+  }),
+  note: z
+    .string()
+    .trim()
+    .max(4000, "Note is too long")
+    .optional()
+    .transform((value) => (value ? value : undefined)),
+});
+
+export const addApplicationNoteSchema = z.object({
+  applicationId: z.string().uuid("Invalid application id"),
+  body: z
+    .string()
+    .trim()
+    .min(1, "Note is required")
+    .max(4000, "Note is too long"),
+});
+
+export type UpdateApplicationStatusInput = z.output<
+  typeof updateApplicationStatusSchema
+>;
+export type AddApplicationNoteInput = z.output<typeof addApplicationNoteSchema>;

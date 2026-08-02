@@ -28,10 +28,15 @@ export function careersApplySuccessPath(slug: string) {
   return `${ROUTES.careers}/${slug}/apply/success` as const;
 }
 
+export function hrApplicationPath(applicationId: string) {
+  return `${ROUTES.dashboard.applications}/${applicationId}` as const;
+}
+
 export type AppRoute =
   | (typeof ROUTES)[Exclude<keyof typeof ROUTES, "dashboard" | "auth">]
   | (typeof ROUTES.dashboard)[keyof typeof ROUTES.dashboard]
   | (typeof ROUTES.auth)[keyof typeof ROUTES.auth]
   | ReturnType<typeof careersJobPath>
   | ReturnType<typeof careersApplyPath>
-  | ReturnType<typeof careersApplySuccessPath>;
+  | ReturnType<typeof careersApplySuccessPath>
+  | ReturnType<typeof hrApplicationPath>;

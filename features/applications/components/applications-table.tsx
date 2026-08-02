@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import {
   getCoreRowModel,
   getFilteredRowModel,
@@ -19,29 +20,15 @@ import {
   DataTableToolbar,
 } from "@/components/data-table";
 import { EmptyState } from "@/components/layouts/empty-state";
-import { Badge } from "@/components/ui/badge";
-import { APPLICATION_STATUS } from "@/constants/application-status";
+import { APPLICATION_STATUS, getApplicationStatusLabel } from "@/constants/application-status";
+import { hrApplicationPath } from "@/constants/routes";
+import { ApplicationStatusBadge } from "@/features/applications/components/application-status-badge";
 import { ResumeDownloadButton } from "@/features/applications/components/resume-download-button";
 import type { HrApplicationTableRow } from "@/services/applications";
 
 type ApplicationsTableProps = {
   applications: HrApplicationTableRow[];
 };
-
-const STATUS_LABELS: Record<string, string> = {
-  [APPLICATION_STATUS.SUBMITTED]: "Submitted",
-  [APPLICATION_STATUS.UNDER_REVIEW]: "Under review",
-  [APPLICATION_STATUS.SHORTLISTED]: "Shortlisted",
-  [APPLICATION_STATUS.INTERVIEW]: "Interview",
-  [APPLICATION_STATUS.OFFERED]: "Offered",
-  [APPLICATION_STATUS.HIRED]: "Hired",
-  [APPLICATION_STATUS.REJECTED]: "Rejected",
-  [APPLICATION_STATUS.WITHDRAWN]: "Withdrawn",
-};
-
-function formatStatus(status: string) {
-  return STATUS_LABELS[status] ?? status.replaceAll("_", " ");
-}
 
 function formatSubmittedAt(iso: string) {
   return new Date(iso).toLocaleDateString();
@@ -73,7 +60,12 @@ export function ApplicationsTable({ applications }: ApplicationsTableProps) {
         ),
         cell: ({ row }) => (
           <div className="space-y-0.5 whitespace-normal">
-            <p className="font-medium">{row.original.fullName}</p>
+            <Link
+              href={hrApplicationPath(row.original.id)}
+              className="font-medium text-foreground hover:underline"
+            >
+              {row.original.fullName}
+            </Link>
             <p className="text-xs text-muted-foreground md:hidden">
               {row.original.email}
             </p>
@@ -117,9 +109,7 @@ export function ApplicationsTable({ applications }: ApplicationsTableProps) {
           <DataTableColumnHeader column={column} title="Status" />
         ),
         cell: ({ row }) => (
-          <Badge variant="outline" className="font-normal capitalize">
-            {formatStatus(row.original.status)}
-          </Badge>
+          <ApplicationStatusBadge status={row.original.status} />
         ),
         filterFn: (row, id, value) => {
           if (!value || value === "all") {
@@ -225,7 +215,7 @@ export function ApplicationsTable({ applications }: ApplicationsTableProps) {
               <option value="all">All statuses</option>
               {Object.values(APPLICATION_STATUS).map((status) => (
                 <option key={status} value={status}>
-                  {formatStatus(status)}
+                  {getApplicationStatusLabel(status)}
                 </option>
               ))}
             </select>
@@ -257,15 +247,18 @@ export function ApplicationsTable({ applications }: ApplicationsTableProps) {
       mobileRow={(application) => (
         <div className="space-y-3 rounded-xl border border-border bg-card p-4">
           <div className="min-w-0 space-y-1">
-            <p className="font-medium">{application.fullName}</p>
+            <Link
+              href={hrApplicationPath(application.id)}
+              className="font-medium text-foreground hover:underline"
+            >
+              {application.fullName}
+            </Link>
             <p className="text-xs text-muted-foreground">
               {application.jobTitle}
             </p>
             <p className="text-xs text-muted-foreground">{application.email}</p>
             <div className="flex flex-wrap items-center gap-2 pt-1">
-              <Badge variant="outline" className="font-normal capitalize">
-                {formatStatus(application.status)}
-              </Badge>
+              <ApplicationStatusBadge status={application.status} />
               <span className="text-xs text-muted-foreground">
                 {formatSubmittedAt(application.createdAt)}
               </span>

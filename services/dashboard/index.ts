@@ -1,5 +1,8 @@
 import { JOB_STATUS, type JobStatus } from "@/constants/job-status";
-import { APPLICATION_STATUS } from "@/constants/application-status";
+import {
+  APPLICATION_STATUS,
+  getApplicationStatusLabel,
+} from "@/constants/application-status";
 import {
   countApplicationsByJob,
   countApplicationsGroupedByStatus,
@@ -47,22 +50,8 @@ const JOB_STATUS_LABELS: Record<JobStatus, string> = {
   archived: "Archived",
 };
 
-const APPLICATION_STATUS_LABELS: Record<string, string> = {
-  [APPLICATION_STATUS.SUBMITTED]: "Submitted",
-  [APPLICATION_STATUS.UNDER_REVIEW]: "Under review",
-  [APPLICATION_STATUS.SHORTLISTED]: "Shortlisted",
-  [APPLICATION_STATUS.INTERVIEW]: "Interview",
-  [APPLICATION_STATUS.OFFERED]: "Offered",
-  [APPLICATION_STATUS.HIRED]: "Hired",
-  [APPLICATION_STATUS.REJECTED]: "Rejected",
-  [APPLICATION_STATUS.WITHDRAWN]: "Withdrawn",
-};
-
 function labelApplicationStatus(status: string) {
-  return (
-    APPLICATION_STATUS_LABELS[status] ??
-    status.replaceAll("_", " ").replace(/^\w/, (c) => c.toUpperCase())
-  );
+  return getApplicationStatusLabel(status);
 }
 
 export async function getHrDashboardStats(): Promise<HrDashboardStats> {

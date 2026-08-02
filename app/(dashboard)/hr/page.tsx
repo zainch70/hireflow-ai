@@ -5,7 +5,7 @@ import { EmptyState } from "@/components/layouts/empty-state";
 import { PageHeader } from "@/components/layouts/page-header";
 import { ButtonLink } from "@/components/layouts/button-link";
 import { SurfaceCard } from "@/components/layouts/surface-card";
-import { ROUTES } from "@/constants/routes";
+import { ROUTES, hrApplicationPath } from "@/constants/routes";
 import { getJobStatusLabel } from "@/features/jobs/lib/job-labels";
 import { getHrDashboardStats } from "@/services/dashboard";
 import type { JobStatus } from "@/constants/job-status";
@@ -119,9 +119,12 @@ export default async function HrHomePage() {
                     className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
                   >
                     <div className="min-w-0">
-                      <p className="truncate font-medium">
+                      <Link
+                        href={hrApplicationPath(application.id)}
+                        className="truncate font-medium hover:underline"
+                      >
                         {application.fullName}
-                      </p>
+                      </Link>
                       <p className="text-xs text-muted-foreground">
                         {application.jobTitle}
                         {" · "}
