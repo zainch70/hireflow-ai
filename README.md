@@ -414,11 +414,102 @@ Already configured:
 - Shared DataTable primitives + Recharts stats
 - Routes, roles, and status constants
 
-## Planned next phases
+## Pending work
 
-1. Richer candidate review polish (bulk actions, filters by hold, etc.)
-2. AI screening / shortlisting (uses stored `resume_text`)
-3. RLS policies on Supabase tables (and Storage policies if needed)
+### Phase 11 — Search & Filters
+
+Implement advanced filtering.
+
+**Applications** — search / filter by:
+
+- Name
+- Email
+- Job
+- Status
+- AI Score
+- Experience
+- Date
+
+Requirements: **server-side filtering**, fast queries (Drizzle / indexed columns). Current TanStack filters are client-side only.
+
+### Phase 12 — Analytics
+
+Build dashboard analytics with **Recharts**.
+
+Show:
+
+- Applications by Status
+- Applications over Time
+- AI Recommendations
+- Jobs Published
+
+Responsive. No unnecessary charts. (Basic Statistics charts already exist; extend for AI metrics and polish.)
+
+### Phase 13 — Security Review
+
+Review the project for security.
+
+Check:
+
+- Authentication
+- Authorization
+- Supabase RLS
+- Storage Security
+- Input Validation
+- API Security
+- Environment Variables
+- Rate Limiting suggestions
+
+Deliverable: list of improvements (do not silently change production behavior without a checklist).
+
+### Phase 14 — Refactoring
+
+Refactor the project.
+
+Goals:
+
+- Reduce duplication
+- Improve naming
+- Improve folder structure
+- Improve readability
+- Apply SOLID where practical
+
+**No feature changes.**
+
+### Phase 15 — Deployment
+
+Prepare production deployment.
+
+Configure:
+
+- Vercel
+- Supabase
+- Environment Variables
+- Production Build
+- Deployment Checklist
+- Known Issues
+- Optimization Suggestions
+
+### Phase 16 — README
+
+Write a professional README.
+
+Include:
+
+- Project Overview
+- Architecture
+- Tech Stack
+- Folder Structure
+- Database
+- Authentication
+- AI Workflow
+- How to Run
+- Environment Variables
+- Deployment
+- Future Improvements
+- Known Limitations
+
+> **Also still pending (earlier product work):** AI screening / shortlisting using stored `resume_text`.
 
 ## License
 
