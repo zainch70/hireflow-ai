@@ -1,6 +1,12 @@
-/**
- * Drizzle schema barrel.
- * Table definitions will be added here in a later phase.
- */
-
-export {};
+export * from "./enums";
+export * from "./timestamps";
+export * from "./profiles";
+export * from "./skills";
+export * from "./jobs";
+export * from "./job-shortlisting-criteria";
+export * from "./applications";
+export * from "./application-education";
+export * from "./application-skills";
+export * from "./application-notes";
+export * from "./ai-analyses";
+export * from "./relations";

@@ -2,7 +2,7 @@
 
 AI-powered careers and recruitment portal. Candidates browse and apply to jobs; HR manages openings, applications, and AI-assisted screening.
 
-> **Status:** Project foundation only. Auth, careers UI, dashboard, schemas, and AI flows are not implemented yet.
+> **Status:** Foundation + database schema are in place. Auth UI, careers pages, dashboard, and AI flows are not built yet.
 
 ## Tech stack
 
@@ -28,18 +28,91 @@ npm install
 cp .env.example .env.local
 ```
 
-Fill in values from your [Supabase](https://supabase.com/dashboard) project and [Google AI Studio](https://aistudio.google.com/apikey):
+Open `.env.local` and fill in the values below.
+
+#### App
+
+| Variable | Value |
+| --- | --- |
+| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` for local dev |
+
+#### Supabase API keys
+
+1. Open your project in the [Supabase Dashboard](https://supabase.com/dashboard)
+2. Go to **Project Settings → API Keys** (not General)
+3. Copy:
+
+| Variable | Supabase UI label | Notes |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Project URL under **General** or **Data API** | e.g. `https://<project-ref>.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | **Publishable** key (`sb_publishable_...`) | Safe for the browser (with RLS) |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Secret** key (`sb_secret_...`) | Server only — never commit or expose to the client |
+
+Older dashboards may label these as `anon` / `service_role`. Same mapping applies.
+
+#### Database URL (`DATABASE_URL`) — important
+
+The **direct** host (`db.<project-ref>.supabase.co`) often fails DNS from some networks. Prefer the **Session pooler** URI.
+
+1. Go to **Project Settings → Database**  
+   (or click **Connect** in the project header)
+2. Open **Connection string**
+3. Choose:
+   - **Type:** URI
+   - **Mode:** **Session pooler** (not Direct)
+4. Copy the URI. It looks like:
+
+```text
+postgresql://postgres.<project-ref>:[YOUR-PASSWORD]@aws-0-<region>.pooler.supabase.com:5432/postgres
+```
+
+5. Replace `[YOUR-PASSWORD]` with your database password  
+   (set at project creation — not your Supabase login password)
+6. Append `?sslmode=require`
+7. Paste into `.env.local`:
+
+```env
+DATABASE_URL=postgresql://postgres.<project-ref>:YOUR_PASSWORD@aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require
+```
+
+**Tips**
+
+- Forgot the DB password? **Database** settings → **Reset database password**
+- If the password contains special characters (`@`, `#`, `%`, `/`, etc.), URL-encode them
+- `npm run db:migrate` checks connectivity first and prints a clear error if `DATABASE_URL` is wrong
+
+#### Gemini
 
 | Variable | Purpose |
 | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public anon key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server-only admin key (never expose to the browser) |
-| `DATABASE_URL` | Postgres connection string for Drizzle |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini API key |
-| `NEXT_PUBLIC_APP_URL` | App URL (default `http://localhost:3000`) |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Required by Vercel AI SDK (`@ai-sdk/google`) |
+| `GEMINI_API_KEYS` | Optional comma-separated key pool for later rotation |
 
-### 3. Run the app
+Create a key at [Google AI Studio](https://aistudio.google.com/apikey).
+
+### 3. Apply database migrations
+
+After `DATABASE_URL` is set:
+
+```bash
+npm run db:migrate
+```
+
+You should see `Database reachable` then `migrations applied successfully`.
+
+Schema changes workflow (never use push):
+
+```bash
+# 1. Edit files under db/schema/
+# 2. Generate SQL (do not hand-edit migration .sql files)
+npm run db:generate
+# 3. Apply
+npm run db:migrate
+```
+
+> **Do not use `drizzle-kit push`.** It is blocked in this repo (`npm run db:push` and `npx drizzle-kit push`).
+
+### 4. Run the app
 
 ```bash
 npm run dev
@@ -57,13 +130,10 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run lint` / `lint:fix` | ESLint |
 | `npm run format` / `format:check` | Prettier |
 | `npm run typecheck` | TypeScript (`tsc --noEmit`) |
-| `npm run db:generate` | Generate Drizzle migrations from schema |
-| `npm run db:migrate` | Apply migration SQL files |
+| `npm run db:generate` | Generate Drizzle migrations from `db/schema` |
+| `npm run db:migrate` | Verify DB connection, then apply migrations |
 | `npm run db:push` | **Blocked** — exits with an error (do not use) |
 | `npm run db:studio` | Open Drizzle Studio |
-
-> **Do not use `drizzle-kit push`.** It can break or drift the schema. Always change schema in code → `db:generate` → `db:migrate`.  
-> Both `npm run db:push` and `npx drizzle-kit push` are blocked (bin wrapper installed on `postinstall`).
 
 ## Architecture
 
@@ -91,6 +161,7 @@ hooks/         # Shared React hooks
 - Keep database access in `db/` / services — not in UI
 - Colocate feature UI, actions, and hooks under `features/<name>`
 - File names: kebab-case; Next.js `page` / `layout` files use default exports
+- Never hand-edit `db/migrations/*.sql` — change `db/schema`, then `db:generate`
 
 ## Current foundation
 
@@ -98,7 +169,7 @@ Already configured:
 
 - Next.js App Router + TypeScript + Tailwind + shadcn/ui
 - Supabase clients (browser, server, middleware, admin)
-- Drizzle setup (no schemas yet)
+- Drizzle schema (profiles, jobs, applications, skills, criteria, AI analyses, etc.)
 - Providers (theme, Supabase, toasts)
 - Auth helpers, middleware stub for `/hr/*`
 - Public and dashboard layout groups
@@ -109,11 +180,10 @@ Already configured:
 
 ## Planned next phases
 
-1. Drizzle schemas + migrations
-2. Authentication (pages + HR route protection)
-3. Public careers pages
-4. HR dashboard shell
-5. Job CRUD → applications → PDF upload → AI screening
+1. Authentication (pages + HR route protection)
+2. Public careers pages
+3. HR dashboard shell
+4. Job CRUD → applications → PDF upload → AI screening
 
 ## License
 
