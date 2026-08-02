@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Syne } from "next/font/google";
 
 import { HomeLanding } from "@/features/careers/components/home-landing";
-import { PublicSiteShell } from "@/features/careers/components/public-site-shell";
 import { env } from "@/lib/env";
 
 const syne = Syne({
@@ -29,14 +28,12 @@ export const metadata: Metadata = {
 
 /**
  * Public landing — static server content for candidates.
- * HR access stays private at /login (provisioned accounts only).
+ * Chrome comes from `(marketing)/layout` (shared shell stays mounted on soft nav).
  */
 export default function HomePage() {
   return (
-    <PublicSiteShell active="home">
-      <div className={syne.variable}>
-        <HomeLanding displayClassName="font-[family-name:var(--font-home-display)] font-semibold" />
-      </div>
-    </PublicSiteShell>
+    <div className={syne.variable}>
+      <HomeLanding displayClassName="font-[family-name:var(--font-home-display)] font-semibold" />
+    </div>
   );
 }

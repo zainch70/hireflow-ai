@@ -6,7 +6,6 @@ import { Container } from "@/components/layouts/container";
 import { PageHeader } from "@/components/layouts/page-header";
 import { SurfaceCard } from "@/components/layouts/surface-card";
 import { ApplicationForm } from "@/features/applications/components/application-form";
-import { PublicSiteShell } from "@/features/careers/components/public-site-shell";
 import { careersJobPath, ROUTES } from "@/constants/routes";
 import { env } from "@/lib/env";
 import { getPublishedJobBySlug } from "@/services/jobs";
@@ -47,40 +46,40 @@ export default async function ApplyPage({ params }: ApplyPageProps) {
   }
 
   return (
-    <PublicSiteShell active="careers">
-      <main>
-        <Container className="py-8 sm:py-14">
-          <div className="mx-auto max-w-3xl space-y-6 sm:space-y-8">
-            <div className="space-y-3">
+    <main>
+      <Container className="py-8 sm:py-14">
+        <div className="mx-auto max-w-3xl space-y-6 sm:space-y-8">
+          <div className="space-y-3">
+            <Link
+              href={careersJobPath(job.slug)}
+              prefetch
+              className="inline-flex text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              ← Back to {job.title}
+            </Link>
+            <PageHeader
+              title={`Apply for ${job.title}`}
+              description="Complete the form and attach a PDF resume (max 5 MB)."
+            />
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Applying via{" "}
               <Link
-                href={careersJobPath(job.slug)}
-                className="inline-flex text-sm font-medium text-muted-foreground hover:text-foreground"
+                href={ROUTES.careers}
+                prefetch
+                className="font-medium text-primary hover:underline"
               >
-                ← Back to {job.title}
+                Careers
               </Link>
-              <PageHeader
-                title={`Apply for ${job.title}`}
-                description="Complete the form and attach a PDF resume (max 5 MB)."
-              />
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                Applying via{" "}
-                <Link
-                  href={ROUTES.careers}
-                  className="font-medium text-primary hover:underline"
-                >
-                  Careers
-                </Link>
-                {job.department ? ` · ${job.department}` : null}
-                {job.location ? ` · ${job.location}` : null}
-              </p>
-            </div>
-
-            <SurfaceCard contentClassName="p-4 pt-4 sm:p-6 sm:pt-6">
-              <ApplicationForm jobSlug={job.slug} jobTitle={job.title} />
-            </SurfaceCard>
+              {job.department ? ` · ${job.department}` : null}
+              {job.location ? ` · ${job.location}` : null}
+            </p>
           </div>
-        </Container>
-      </main>
-    </PublicSiteShell>
+
+          <SurfaceCard contentClassName="p-4 pt-4 sm:p-6 sm:pt-6">
+            <ApplicationForm jobSlug={job.slug} jobTitle={job.title} />
+          </SurfaceCard>
+        </div>
+      </Container>
+    </main>
   );
 }

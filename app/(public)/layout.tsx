@@ -1,6 +1,6 @@
 /**
- * Public route group layout.
- * Careers pages bring their own PublicSiteShell; login keeps AuthCentered.
+ * Auth / non-marketing public routes (e.g. login).
+ * Careers + home live under `(marketing)` with a shared PublicSiteShell.
  */
 export default function PublicLayout({
   children,

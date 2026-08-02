@@ -6,7 +6,6 @@ import { EmptyState } from "@/components/layouts/empty-state";
 import { PageHeader } from "@/components/layouts/page-header";
 import { CareersFilters } from "@/features/careers/components/careers-filters";
 import { JobCard } from "@/features/careers/components/job-card";
-import { PublicSiteShell } from "@/features/careers/components/public-site-shell";
 import { parseCareersSearchParams } from "@/features/careers/lib/careers";
 import { env } from "@/lib/env";
 import {
@@ -53,49 +52,47 @@ export default async function CareersPage({ searchParams }: CareersPageProps) {
   );
 
   return (
-    <PublicSiteShell active="careers">
-      <main>
-        <Container className="space-y-8 py-10 sm:py-14">
-          <PageHeader
-            title="Careers"
-            description="Find a role that fits. Only published openings appear here."
+    <main>
+      <Container className="space-y-8 py-10 sm:py-14">
+        <PageHeader
+          title="Careers"
+          description="Find a role that fits. Only published openings appear here."
+        />
+
+        <CareersFilters
+          values={values}
+          departments={filterOptions.departments}
+          locations={filterOptions.locations}
+        />
+
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            {jobs.length === 0
+              ? "No roles match"
+              : `${jobs.length} open role${jobs.length === 1 ? "" : "s"}`}
+          </p>
+        </div>
+
+        {jobs.length === 0 ? (
+          <EmptyState
+            icon={<BriefcaseBusiness className="size-5" aria-hidden="true" />}
+            title={hasFilters ? "No matching roles" : "No open roles yet"}
+            description={
+              hasFilters
+                ? "Try a different search or clear your filters."
+                : "Check back soon — new openings will show up here when published."
+            }
           />
-
-          <CareersFilters
-            values={values}
-            departments={filterOptions.departments}
-            locations={filterOptions.locations}
-          />
-
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">
-              {jobs.length === 0
-                ? "No roles match"
-                : `${jobs.length} open role${jobs.length === 1 ? "" : "s"}`}
-            </p>
-          </div>
-
-          {jobs.length === 0 ? (
-            <EmptyState
-              icon={<BriefcaseBusiness className="size-5" aria-hidden="true" />}
-              title={hasFilters ? "No matching roles" : "No open roles yet"}
-              description={
-                hasFilters
-                  ? "Try a different search or clear your filters."
-                  : "Check back soon — new openings will show up here when published."
-              }
-            />
-          ) : (
-            <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {jobs.map((job) => (
-                <li key={job.id}>
-                  <JobCard job={job} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </Container>
-      </main>
-    </PublicSiteShell>
+        ) : (
+          <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {jobs.map((job) => (
+              <li key={job.id}>
+                <JobCard job={job} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </Container>
+    </main>
   );
 }

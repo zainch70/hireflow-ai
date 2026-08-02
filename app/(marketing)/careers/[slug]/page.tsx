@@ -5,7 +5,6 @@ import { ArrowLeft, MapPin } from "lucide-react";
 
 import { Container } from "@/components/layouts/container";
 import { ApplyButton } from "@/features/careers/components/apply-button";
-import { PublicSiteShell } from "@/features/careers/components/public-site-shell";
 import { buildJobPostingJsonLd } from "@/features/careers/lib/careers";
 import type { EmploymentType } from "@/constants/employment-type";
 import { ROUTES } from "@/constants/routes";
@@ -76,7 +75,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
   });
 
   return (
-    <PublicSiteShell active="careers">
+    <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -88,6 +87,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
             <div className="space-y-6">
               <Link
                 href={ROUTES.careers}
+                prefetch
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
                 <ArrowLeft className="size-4" aria-hidden="true" />
@@ -183,6 +183,6 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
           </div>
         </Container>
       </main>
-    </PublicSiteShell>
+    </>
   );
 }
