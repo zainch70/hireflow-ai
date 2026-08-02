@@ -4,6 +4,16 @@ const nextConfig: NextConfig = {
   // Keep pdf-parse / pdfjs / canvas out of the Turbopack bundle (Node runtime).
   serverExternalPackages: ["pdf-parse", "pdfjs-dist", "@napi-rs/canvas"],
   experimental: {
+    optimizePackageImports: ["lucide-react", "recharts"],
+    /**
+     * Soft-nav cache for dynamic HR pages. Default dynamic staleTime is 0,
+     * so every click waited on a full RSC stream — this keeps the last
+     * payload briefly and makes back/forth nav feel instant.
+     */
+    staleTimes: {
+      dynamic: 60,
+      static: 300,
+    },
     serverActions: {
       // Allow 5MB resume + form payload headroom
       bodySizeLimit: "6mb",

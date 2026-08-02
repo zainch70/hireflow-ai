@@ -1,9 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
-import { ROUTES, hrApplicationPath } from "@/constants/routes";
 import { requireHrProfile } from "@/lib/auth";
+import { revalidateAfterApplicationChange } from "@/lib/cache/tags";
 import { toErrorMessage } from "@/lib/errors";
 import {
   addApplicationNoteSchema,
@@ -14,13 +12,6 @@ import {
   updateApplicationStatus,
 } from "@/services/applications";
 import type { ApplicationActionResult } from "@/services/applications/errors";
-
-function revalidateApplicationPaths(applicationId: string) {
-  revalidatePath(ROUTES.dashboard.applications);
-  revalidatePath(hrApplicationPath(applicationId));
-  revalidatePath(ROUTES.dashboard.root);
-  revalidatePath(ROUTES.dashboard.statistics);
-}
 
 export async function updateApplicationStatusAction(
   input: unknown,
@@ -41,7 +32,7 @@ export async function updateApplicationStatusAction(
       note: parsed.data.note,
       actorId: profile.id,
     });
-    revalidateApplicationPaths(parsed.data.applicationId);
+    revalidateAfterApplicationChange(parsed.data.applicationId);
     return { applicationId: parsed.data.applicationId };
   } catch (error) {
     return {
@@ -68,7 +59,7 @@ export async function addApplicationNoteAction(
       body: parsed.data.body,
       authorId: profile.id,
     });
-    revalidateApplicationPaths(parsed.data.applicationId);
+    revalidateAfterApplicationChange(parsed.data.applicationId);
     return { applicationId: parsed.data.applicationId };
   } catch (error) {
     return {

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
@@ -8,32 +9,25 @@ import type { User } from "@supabase/supabase-js";
 
 export type Profile = typeof profiles.$inferSelect;
 
-async function fetchProfileById(userId: string): Promise<Profile | null> {
-  const [profile] = await db
-    .select()
-    .from(profiles)
-    .where(eq(profiles.id, userId))
-    .limit(1);
+/** Deduped per request — soft navs still hit DB once per navigation. */
+export const getProfileById = cache(
+  async (userId: string): Promise<Profile | null> => {
+    const [profile] = await db
+      .select()
+      .from(profiles)
+      .where(eq(profiles.id, userId))
+      .limit(1);
 
-  return profile ?? null;
-}
-
-/**
- * Uncached profile read — avoids stale null after ensureProfile inserts
- * within the same request when React cache would retain a miss.
- */
-export async function getProfileById(
-  userId: string,
-): Promise<Profile | null> {
-  return fetchProfileById(userId);
-}
+    return profile ?? null;
+  },
+);
 
 /**
  * Ensures a profiles row exists for the auth user.
  * Role comes from auth user_metadata.role when present (for future provisioning).
  */
 export async function ensureProfile(user: User): Promise<Profile> {
-  const existing = await fetchProfileById(user.id);
+  const existing = await getProfileById(user.id);
 
   if (existing) {
     return existing;
@@ -67,7 +61,12 @@ export async function ensureProfile(user: User): Promise<Profile> {
     return created;
   }
 
-  const profile = await fetchProfileById(user.id);
+  // Bypass request cache after insert race — re-read from DB.
+  const [profile] = await db
+    .select()
+    .from(profiles)
+    .where(eq(profiles.id, user.id))
+    .limit(1);
 
   if (!profile) {
     throw new Error("Failed to create user profile");

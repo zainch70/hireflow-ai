@@ -1,9 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
-import { ROUTES } from "@/constants/routes";
 import { requireHrProfile } from "@/lib/auth";
+import { revalidateAfterJobChange } from "@/lib/cache/tags";
 import { toErrorMessage } from "@/lib/errors";
 import { jobFormSchema, jobIdSchema } from "@/schemas/jobs";
 import {
@@ -15,14 +13,6 @@ import {
   updateJob,
 } from "@/services/jobs";
 import type { JobActionResult } from "@/services/jobs/errors";
-
-function revalidateJobPaths(jobId?: string) {
-  revalidatePath(ROUTES.dashboard.jobs);
-  revalidatePath(ROUTES.dashboard.root);
-  if (jobId) {
-    revalidatePath(`${ROUTES.dashboard.jobs}/${jobId}/edit`);
-  }
-}
 
 export async function createJobAction(
   input: unknown,
@@ -41,7 +31,7 @@ export async function createJobAction(
       data: parsed.data,
       createdById: profile.id,
     });
-    revalidateJobPaths(job.id);
+    revalidateAfterJobChange(job.id);
     return { jobId: job.id };
   } catch (error) {
     return { error: toErrorMessage(error) };
@@ -68,7 +58,7 @@ export async function updateJobAction(
 
   try {
     await updateJob({ jobId, data: parsed.data });
-    revalidateJobPaths(jobId);
+    revalidateAfterJobChange(jobId);
     return {};
   } catch (error) {
     return {
@@ -87,7 +77,7 @@ export async function deleteJobAction(jobId: string): Promise<JobActionResult> {
 
   try {
     await deleteJob(jobId);
-    revalidateJobPaths();
+    revalidateAfterJobChange();
     return {};
   } catch (error) {
     return {
@@ -108,7 +98,7 @@ export async function publishJobAction(
 
   try {
     await publishJob(jobId);
-    revalidateJobPaths(jobId);
+    revalidateAfterJobChange(jobId);
     return {};
   } catch (error) {
     return {
@@ -129,7 +119,7 @@ export async function unpublishJobAction(
 
   try {
     await unpublishJob(jobId);
-    revalidateJobPaths(jobId);
+    revalidateAfterJobChange(jobId);
     return {};
   } catch (error) {
     return {
@@ -148,7 +138,7 @@ export async function closeJobAction(jobId: string): Promise<JobActionResult> {
 
   try {
     await closeJob(jobId);
-    revalidateJobPaths(jobId);
+    revalidateAfterJobChange(jobId);
     return {};
   } catch (error) {
     return {

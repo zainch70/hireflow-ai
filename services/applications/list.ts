@@ -1,7 +1,9 @@
 import { and, asc, count, desc, eq, gte, ilike, lte, sql } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
 
 import { db } from "@/db";
 import { aiAnalyses, applications, jobs } from "@/db/schema";
+import { CACHE_TAGS } from "@/lib/cache/tags";
 import {
   fillDailyCounts,
   parseNumericString,
@@ -105,11 +107,44 @@ function resolveHrApplicationOrderBy(
 
 /**
  * Paginated HR applications list with server-side filters.
- * Uses indexed columns (status, job, email, created_at, experience) and a
- * correlated latest-score subquery backed by ai_analyses(application_id, created_at).
+ * Cached per filter key; invalidated via CACHE_TAGS.applications.
  */
 export async function listApplicationsForHr(
   filters: Partial<HrApplicationsFilters> = {},
+): Promise<HrApplicationListResult> {
+  const page = filters.page ?? 1;
+  const pageSize = filters.pageSize ?? 20;
+  const sort = filters.sort ?? "createdAt";
+  const order = filters.order ?? "desc";
+
+  return unstable_cache(
+    async () => loadApplicationsForHr(filters),
+    [
+      "hr-applications-list",
+      filters.name ?? "",
+      filters.email ?? "",
+      filters.jobId ?? "",
+      filters.status ?? "",
+      String(filters.scoreMin ?? ""),
+      String(filters.scoreMax ?? ""),
+      String(filters.experienceMin ?? ""),
+      String(filters.experienceMax ?? ""),
+      filters.dateFrom ?? "",
+      filters.dateTo ?? "",
+      String(page),
+      String(pageSize),
+      sort,
+      order,
+    ],
+    {
+      revalidate: 30,
+      tags: [CACHE_TAGS.applications, CACHE_TAGS.dashboard, CACHE_TAGS.ai],
+    },
+  )();
+}
+
+async function loadApplicationsForHr(
+  filters: Partial<HrApplicationsFilters>,
 ): Promise<HrApplicationListResult> {
   const page = filters.page ?? 1;
   const pageSize = filters.pageSize ?? 20;
@@ -179,16 +214,25 @@ export async function listApplicationsForHr(
 
 /** Jobs that already have applications — for filter dropdowns. */
 export async function getHrApplicationFilterOptions(): Promise<HrApplicationFilterOptions> {
-  const rows = await db
-    .selectDistinct({
-      id: jobs.id,
-      title: jobs.title,
-    })
-    .from(applications)
-    .innerJoin(jobs, eq(applications.jobId, jobs.id))
-    .orderBy(asc(jobs.title));
+  return unstable_cache(
+    async () => {
+      const rows = await db
+        .selectDistinct({
+          id: jobs.id,
+          title: jobs.title,
+        })
+        .from(applications)
+        .innerJoin(jobs, eq(applications.jobId, jobs.id))
+        .orderBy(asc(jobs.title));
 
-  return { jobs: rows };
+      return { jobs: rows };
+    },
+    ["hr-application-filter-options"],
+    {
+      revalidate: 60,
+      tags: [CACHE_TAGS.applications, CACHE_TAGS.jobs],
+    },
+  )();
 }
 
 export function toHrApplicationTableRows(

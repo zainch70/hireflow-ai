@@ -7,7 +7,7 @@ import {
   ApplicationsByStatusChart,
   ApplicationsOverTimeChart,
   JobsPublishedChart,
-} from "@/features/dashboard/components/stats-charts";
+} from "@/features/dashboard/components/stats-charts.lazy";
 import { getHrDashboardStats } from "@/services/dashboard";
 
 export const metadata: Metadata = {

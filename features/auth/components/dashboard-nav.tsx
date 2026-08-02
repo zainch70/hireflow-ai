@@ -37,6 +37,7 @@ export function DashboardNav({ className, linkClassName }: DashboardNavProps) {
           <Link
             key={item.href}
             href={item.href}
+            prefetch={item.href !== ROUTES.dashboard.statistics}
             className={cn(
               "rounded-lg px-2.5 py-1.5 text-sm transition-colors",
               active

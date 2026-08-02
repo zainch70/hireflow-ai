@@ -5,8 +5,9 @@ import { isDashboardPath } from "@/lib/auth/paths";
 import { createClient } from "@/lib/supabase/middleware";
 
 /**
- * Refreshes the Supabase session and protects HR routes.
- * Role checks happen in the dashboard layout (DB-backed profile).
+ * Refreshes the Supabase session on auth-related routes only.
+ * Public careers/home skip this edge work (better TBT / bfcache).
+ * Role checks still happen in the dashboard layout (DB-backed profile).
  */
 export async function middleware(request: NextRequest) {
   const { supabase, supabaseResponse } = createClient(request);
@@ -27,7 +28,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
-  ],
+  matcher: ["/hr", "/hr/:path*", "/login"],
 };

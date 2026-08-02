@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { careersApplyPath, careersJobPath, ROUTES } from "@/constants/routes";
+import { revalidateAfterApplicationChange } from "@/lib/cache/tags";
 import { toErrorMessage, zodIssuesToFieldErrors } from "@/lib/errors";
 import { applicationFormSchema } from "@/schemas/applications";
 import { submitApplication } from "@/services/applications";
@@ -36,10 +37,10 @@ export async function submitApplicationAction(
       resume,
     });
 
+    revalidateAfterApplicationChange(application.id);
     revalidatePath(ROUTES.careers);
     revalidatePath(careersJobPath(jobSlug));
     revalidatePath(careersApplyPath(jobSlug));
-    revalidatePath(ROUTES.dashboard.applications);
 
     return { applicationId: application.id };
   } catch (error) {
