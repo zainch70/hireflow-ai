@@ -23,8 +23,8 @@ export type AiShortlistView = {
   concerns: string[];
   summary: string | null;
   errorMessage: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 };
 
 function asStringArray(value: unknown): string[] {

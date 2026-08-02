@@ -8,6 +8,7 @@ import { MetricCard } from "@/components/layouts/metric-card";
 import { SurfaceCard } from "@/components/layouts/surface-card";
 import { ROUTES, hrApplicationPath } from "@/constants/routes";
 import { getJobStatusLabel } from "@/features/jobs/lib/job-labels";
+import { formatDate } from "@/lib/dates";
 import { getHrDashboardStats } from "@/services/dashboard";
 import type { JobStatus } from "@/constants/job-status";
 
@@ -129,7 +130,7 @@ export default async function HrHomePage() {
                       <p className="text-xs text-muted-foreground">
                         {application.jobTitle}
                         {" · "}
-                        {application.createdAt.toLocaleDateString()}
+                        {formatDate(application.createdAt)}
                       </p>
                     </div>
                     <Inbox

@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 
 import { CACHE_TAGS } from "@/lib/cache/tags";
+import { toIsoString } from "@/lib/dates";
 import {
   APPLICATION_STATUS,
   getApplicationStatusLabel,
@@ -24,7 +25,6 @@ import {
   countJobsGroupedByStatus,
   countJobsPublishedOverTime,
   listRecentJobs,
-  type Job,
 } from "@/services/jobs";
 
 export type StatusCount = {
@@ -42,7 +42,13 @@ export type HrDashboardStats = {
   applicationsOverTime: Array<{ date: string; count: number }>;
   jobsPublishedOverTime: Array<{ date: string; count: number }>;
   aiRecommendations: AiRecommendationCount[];
-  recentJobs: Job[];
+  recentJobs: Array<{
+    id: string;
+    title: string;
+    status: string;
+    department: string | null;
+    updatedAt: string;
+  }>;
   recentApplications: HrApplicationListItem[];
   publishedJobs: number;
   draftJobs: number;
@@ -58,7 +64,7 @@ async function loadHrDashboardStats(): Promise<HrDashboardStats> {
     applicationsOverTime,
     jobsPublishedOverTime,
     aiRecommendations,
-    recentJobs,
+    recentJobsRaw,
     recentApplications,
   ] = await Promise.all([
     countJobsGroupedByStatus(),
@@ -102,6 +108,14 @@ async function loadHrDashboardStats(): Promise<HrDashboardStats> {
     (sum, row) => sum + row.count,
     0,
   );
+
+  const recentJobs = recentJobsRaw.map((job) => ({
+    id: job.id,
+    title: job.title,
+    status: job.status,
+    department: job.department,
+    updatedAt: toIsoString(job.updatedAt),
+  }));
 
   return {
     jobsTotal,

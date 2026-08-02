@@ -91,6 +91,10 @@ Business logic never in pages, components, or route handlers. Put it in `service
 
 - Minimal JS, small client bundles, lazy load when useful.
 - Memoization only when needed. Avoid unnecessary re-renders.
+- **`unstable_cache` JSON-serializes.** Dates become ISO strings on cache hits.
+  Always return ISO strings from cached loaders, or format via `lib/dates`
+  (`toIsoString` / `formatDate` / `formatDateTime`). Never call Date methods
+  (`.toISOString()`, `.toLocaleDateString()`) on values that may be cached.
 
 ## Errors
 

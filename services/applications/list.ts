@@ -4,6 +4,7 @@ import { unstable_cache } from "next/cache";
 import { db } from "@/db";
 import { aiAnalyses, applications, jobs } from "@/db/schema";
 import { CACHE_TAGS } from "@/lib/cache/tags";
+import { toIsoString } from "@/lib/dates";
 import {
   fillDailyCounts,
   parseNumericString,
@@ -201,7 +202,7 @@ async function loadApplicationsForHr(
       resumeFileName: row.resumeFileName,
       yearsOfExperience: row.yearsOfExperience,
       aiScore: parseNumericString(row.aiScore),
-      createdAt: row.createdAt,
+      createdAt: toIsoString(row.createdAt),
       jobTitle: row.jobTitle,
       jobSlug: row.jobSlug,
     })),
@@ -248,7 +249,7 @@ export function toHrApplicationTableRows(
     resumeFileName: row.resumeFileName,
     yearsOfExperience: row.yearsOfExperience,
     aiScore: row.aiScore,
-    createdAt: row.createdAt.toISOString(),
+    createdAt: row.createdAt,
     jobTitle: row.jobTitle,
     jobSlug: row.jobSlug,
   }));
@@ -280,8 +281,18 @@ export async function listRecentApplicationsForHr(
     .limit(limit);
 
   return rows.map((row) => ({
-    ...row,
+    id: row.id,
+    jobId: row.jobId,
+    fullName: row.fullName,
+    email: row.email,
+    status: row.status,
+    resumePath: row.resumePath,
+    resumeFileName: row.resumeFileName,
+    yearsOfExperience: row.yearsOfExperience,
     aiScore: parseNumericString(row.aiScore),
+    createdAt: toIsoString(row.createdAt),
+    jobTitle: row.jobTitle,
+    jobSlug: row.jobSlug,
   }));
 }
 

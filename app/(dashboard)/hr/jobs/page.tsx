@@ -26,7 +26,7 @@ function toJobTableRows(
     salaryMin: job.salaryMin,
     salaryMax: job.salaryMax,
     salaryCurrency: job.salaryCurrency,
-    updatedAt: job.updatedAt.toISOString(),
+    updatedAt: job.updatedAt,
   }));
 }
 

@@ -7,6 +7,7 @@ import { jobs } from "@/db/schema";
 import { JOB_STATUS, type JobStatus } from "@/constants/job-status";
 import type { EmploymentType } from "@/constants/employment-type";
 import { CACHE_TAGS } from "@/lib/cache/tags";
+import { toIsoString, toIsoStringOrNull } from "@/lib/dates";
 import {
   fillDailyCounts,
   sanitizeLikeTerm,
@@ -57,12 +58,51 @@ export type PublishedJobCard = {
   salaryMin: number | null;
   salaryMax: number | null;
   salaryCurrency: string | null;
-  publishedAt: Date | null;
+  /** ISO string — Data Cache safe (never a live Date after cache hit). */
+  publishedAt: string | null;
 };
 
 export type PublishedJobDetail = PublishedJobCard & {
   requirements: string | null;
 };
+
+/** HR jobs table row from cached `listJobs` — timestamps are ISO strings. */
+export type JobListRow = Omit<Job, "createdAt" | "updatedAt" | "publishedAt"> & {
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string | null;
+};
+
+function toJobListRow(job: Job): JobListRow {
+  return {
+    ...job,
+    createdAt: toIsoString(job.createdAt),
+    updatedAt: toIsoString(job.updatedAt),
+    publishedAt: toIsoStringOrNull(job.publishedAt),
+  };
+}
+
+function toPublishedJobCard(
+  job: {
+    id: string;
+    slug: string;
+    title: string;
+    department: string | null;
+    location: string | null;
+    employmentType: Job["employmentType"];
+    experience: string | null;
+    description: string;
+    salaryMin: number | null;
+    salaryMax: number | null;
+    salaryCurrency: string | null;
+    publishedAt: Date | null;
+  },
+): PublishedJobCard {
+  return {
+    ...job,
+    publishedAt: toIsoStringOrNull(job.publishedAt),
+  };
+}
 
 export type PublishedJobFilters = {
   q?: string;
@@ -106,12 +146,15 @@ function sanitizeSearchTerm(value: string | undefined): string | undefined {
   return sanitizeLikeTerm(value);
 }
 
-export async function listJobs(): Promise<Job[]> {
+export async function listJobs(): Promise<JobListRow[]> {
   return listJobsCached();
 }
 
 const listJobsCached = unstable_cache(
-  async () => db.select().from(jobs).orderBy(desc(jobs.updatedAt)),
+  async () => {
+    const rows = await db.select().from(jobs).orderBy(desc(jobs.updatedAt));
+    return rows.map(toJobListRow);
+  },
   ["hr-jobs-list"],
   { revalidate: 30, tags: [CACHE_TAGS.jobs, CACHE_TAGS.dashboard] },
 );
@@ -335,11 +378,13 @@ async function loadPublishedJobs(
     conditions.push(eq(jobs.location, location));
   }
 
-  return db
+  const rows = await db
     .select(publishedJobCardColumns)
     .from(jobs)
     .where(and(...conditions))
     .orderBy(desc(jobs.publishedAt), desc(jobs.updatedAt));
+
+  return rows.map(toPublishedJobCard);
 }
 
 /** Deduped per request (metadata + page share one query). */
@@ -352,7 +397,12 @@ export const getPublishedJobBySlug = cache(async (slug: string) => {
         .where(and(eq(jobs.slug, slug), eq(jobs.status, JOB_STATUS.PUBLISHED)))
         .limit(1);
 
-      return job ?? null;
+      if (!job) return null;
+
+      return {
+        ...toPublishedJobCard(job),
+        requirements: job.requirements,
+      };
     },
     ["published-job", slug],
     { revalidate: 60, tags: [CACHE_TAGS.careers, CACHE_TAGS.jobs] },
