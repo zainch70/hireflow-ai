@@ -1,3 +1,6 @@
+import { unstable_cache } from "next/cache";
+
+import { CACHE_TAGS } from "@/lib/cache/tags";
 import {
   APPLICATION_STATUS,
   getApplicationStatusLabel,
@@ -48,7 +51,7 @@ export type HrDashboardStats = {
   shortlistedApplications: number;
 };
 
-export async function getHrDashboardStats(): Promise<HrDashboardStats> {
+async function loadHrDashboardStats(): Promise<HrDashboardStats> {
   const [
     jobsByStatusRaw,
     applicationsByStatusRaw,
@@ -120,3 +123,18 @@ export async function getHrDashboardStats(): Promise<HrDashboardStats> {
       applicationsByStatusMap.get(APPLICATION_STATUS.SHORTLISTED) ?? 0,
   };
 }
+
+/** Cached dashboard payload — invalidated via CACHE_TAGS on mutations. */
+export const getHrDashboardStats = unstable_cache(
+  loadHrDashboardStats,
+  ["hr-dashboard-stats"],
+  {
+    revalidate: 30,
+    tags: [
+      CACHE_TAGS.dashboard,
+      CACHE_TAGS.jobs,
+      CACHE_TAGS.applications,
+      CACHE_TAGS.ai,
+    ],
+  },
+);

@@ -1,8 +1,8 @@
 /**
- * Careers pages query Postgres — skip static prerender so Vercel/local
- * builds do not open DB connections at build time.
+ * Public careers — ISR via Data Cache tags + time revalidation.
+ * Mutations call revalidateTag(CACHE_TAGS.careers / jobs).
  */
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default function CareersLayout({
   children,

@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 import { InlineAlert } from "@/components/layouts/inline-alert";
 import { loginHrAction } from "@/features/auth/actions/auth.actions";
@@ -20,6 +21,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
     loginHrAction,
     initialState,
   );
+  const [showPassword, setShowPassword] = useState(false);
 
   const formErrorId = state.error ? "login-form-error" : undefined;
 
@@ -63,20 +65,40 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
         <Label htmlFor="password" className="text-foreground">
           Password
         </Label>
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          placeholder="••••••••"
-          required
-          minLength={8}
-          aria-invalid={Boolean(state.fieldErrors?.password)}
-          aria-describedby={
-            state.fieldErrors?.password ? "password-error" : undefined
-          }
-          disabled={isPending}
-        />
+        <div className="relative">
+          <Input
+            id="password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            placeholder="••••••••"
+            required
+            minLength={8}
+            className="pr-10"
+            aria-invalid={Boolean(state.fieldErrors?.password)}
+            aria-describedby={
+              state.fieldErrors?.password ? "password-error" : undefined
+            }
+            disabled={isPending}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute top-1/2 right-1 size-8 -translate-y-1/2 text-muted-foreground hover:bg-transparent hover:text-foreground"
+            onClick={() => setShowPassword((open) => !open)}
+            disabled={isPending}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-pressed={showPassword}
+            tabIndex={-1}
+          >
+            {showPassword ? (
+              <EyeOff className="size-4" aria-hidden="true" />
+            ) : (
+              <Eye className="size-4" aria-hidden="true" />
+            )}
+          </Button>
+        </div>
         {state.fieldErrors?.password?.[0] ? (
           <p
             id="password-error"

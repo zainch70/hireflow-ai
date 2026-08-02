@@ -1,9 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
-import { ROUTES, hrApplicationPath } from "@/constants/routes";
 import { requireHrProfile } from "@/lib/auth";
+import { revalidateAfterAiShortlist } from "@/lib/cache/tags";
 import { toErrorMessage } from "@/lib/errors";
 import { applicationIdSchema } from "@/schemas/applications";
 import { runAiShortlisting } from "@/services/ai";
@@ -25,10 +23,7 @@ export async function runAiShortlistingAction(
 
   try {
     const analysis = await runAiShortlisting(parsed.data.applicationId);
-    revalidatePath(hrApplicationPath(parsed.data.applicationId));
-    revalidatePath(ROUTES.dashboard.applications);
-    revalidatePath(ROUTES.dashboard.root);
-    revalidatePath(ROUTES.dashboard.statistics);
+    revalidateAfterAiShortlist(parsed.data.applicationId);
     return { analysisId: analysis.id };
   } catch (error) {
     return {

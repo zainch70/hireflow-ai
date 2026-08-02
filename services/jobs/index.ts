@@ -1,10 +1,12 @@
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { and, asc, count, desc, eq, gte, ilike, isNotNull, or, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { jobs } from "@/db/schema";
 import { JOB_STATUS, type JobStatus } from "@/constants/job-status";
 import type { EmploymentType } from "@/constants/employment-type";
+import { CACHE_TAGS } from "@/lib/cache/tags";
 import {
   fillDailyCounts,
   sanitizeLikeTerm,
@@ -105,8 +107,14 @@ function sanitizeSearchTerm(value: string | undefined): string | undefined {
 }
 
 export async function listJobs(): Promise<Job[]> {
-  return db.select().from(jobs).orderBy(desc(jobs.updatedAt));
+  return listJobsCached();
 }
+
+const listJobsCached = unstable_cache(
+  async () => db.select().from(jobs).orderBy(desc(jobs.updatedAt)),
+  ["hr-jobs-list"],
+  { revalidate: 30, tags: [CACHE_TAGS.jobs, CACHE_TAGS.dashboard] },
+);
 
 export async function getJobById(jobId: string): Promise<Job | null> {
   const [job] = await db.select().from(jobs).where(eq(jobs.id, jobId)).limit(1);
@@ -278,6 +286,24 @@ export async function listRecentJobs(limit = 5): Promise<Job[]> {
 export async function listPublishedJobs(
   filters: PublishedJobFilters = {},
 ): Promise<PublishedJobCard[]> {
+  const q = sanitizeSearchTerm(filters.q) ?? "";
+  const department = filters.department?.trim() ?? "";
+  const location = filters.location?.trim() ?? "";
+  const employmentType = filters.employmentType ?? "";
+
+  return unstable_cache(
+    async () => loadPublishedJobs(filters),
+    ["published-jobs", q, department, location, employmentType],
+    {
+      revalidate: 60,
+      tags: [CACHE_TAGS.careers, CACHE_TAGS.jobs],
+    },
+  )();
+}
+
+async function loadPublishedJobs(
+  filters: PublishedJobFilters,
+): Promise<PublishedJobCard[]> {
   const q = sanitizeSearchTerm(filters.q);
   const department = filters.department?.trim();
   const location = filters.location?.trim();
@@ -317,17 +343,21 @@ export async function listPublishedJobs(
 }
 
 /** Deduped per request (metadata + page share one query). */
-export const getPublishedJobBySlug = cache(
-  async (slug: string): Promise<PublishedJobDetail | null> => {
-    const [job] = await db
-      .select(publishedJobDetailColumns)
-      .from(jobs)
-      .where(and(eq(jobs.slug, slug), eq(jobs.status, JOB_STATUS.PUBLISHED)))
-      .limit(1);
+export const getPublishedJobBySlug = cache(async (slug: string) => {
+  return unstable_cache(
+    async (): Promise<PublishedJobDetail | null> => {
+      const [job] = await db
+        .select(publishedJobDetailColumns)
+        .from(jobs)
+        .where(and(eq(jobs.slug, slug), eq(jobs.status, JOB_STATUS.PUBLISHED)))
+        .limit(1);
 
-    return job ?? null;
-  },
-);
+      return job ?? null;
+    },
+    ["published-job", slug],
+    { revalidate: 60, tags: [CACHE_TAGS.careers, CACHE_TAGS.jobs] },
+  )();
+});
 
 /** Any-status lookup (e.g. apply success after a role closes). */
 export const getJobBySlug = cache(
@@ -352,29 +382,38 @@ export async function getPublishedJobFilterOptions(): Promise<{
   departments: string[];
   locations: string[];
 }> {
-  const [departmentRows, locationRows] = await Promise.all([
-    db
-      .selectDistinct({ department: jobs.department })
-      .from(jobs)
-      .where(
-        and(eq(jobs.status, JOB_STATUS.PUBLISHED), isNotNull(jobs.department)),
-      )
-      .orderBy(asc(jobs.department)),
-    db
-      .selectDistinct({ location: jobs.location })
-      .from(jobs)
-      .where(
-        and(eq(jobs.status, JOB_STATUS.PUBLISHED), isNotNull(jobs.location)),
-      )
-      .orderBy(asc(jobs.location)),
-  ]);
+  return unstable_cache(
+    async () => {
+      const [departmentRows, locationRows] = await Promise.all([
+        db
+          .selectDistinct({ department: jobs.department })
+          .from(jobs)
+          .where(
+            and(
+              eq(jobs.status, JOB_STATUS.PUBLISHED),
+              isNotNull(jobs.department),
+            ),
+          )
+          .orderBy(asc(jobs.department)),
+        db
+          .selectDistinct({ location: jobs.location })
+          .from(jobs)
+          .where(
+            and(eq(jobs.status, JOB_STATUS.PUBLISHED), isNotNull(jobs.location)),
+          )
+          .orderBy(asc(jobs.location)),
+      ]);
 
-  return {
-    departments: departmentRows
-      .map((row) => row.department?.trim())
-      .filter((value): value is string => Boolean(value)),
-    locations: locationRows
-      .map((row) => row.location?.trim())
-      .filter((value): value is string => Boolean(value)),
-  };
+      return {
+        departments: departmentRows
+          .map((row) => row.department?.trim())
+          .filter((value): value is string => Boolean(value)),
+        locations: locationRows
+          .map((row) => row.location?.trim())
+          .filter((value): value is string => Boolean(value)),
+      };
+    },
+    ["published-job-filter-options"],
+    { revalidate: 60, tags: [CACHE_TAGS.careers, CACHE_TAGS.jobs] },
+  )();
 }
