@@ -18,6 +18,7 @@ import {
   type AiRecommendation,
 } from "@/lib/ai/shortlist-schema";
 import { runAiShortlistingAction } from "@/features/applications/actions/ai.actions";
+import { formatDateTime } from "@/lib/dates";
 import type { AiShortlistView } from "@/services/ai";
 import { cn } from "@/lib/utils";
 
@@ -105,7 +106,7 @@ export function AiShortlistPanel({
           </p>
           {analysis?.createdAt ? (
             <p className="mt-1 text-xs text-muted-foreground">
-              Last run {analysis.createdAt.toLocaleString()}
+              Last run {formatDateTime(analysis.createdAt)}
               {analysis.model ? ` · ${analysis.model}` : ""}
             </p>
           ) : null}

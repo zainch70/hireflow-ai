@@ -2,6 +2,7 @@ import {
   ApplicationStatusBadge,
   getApplicationStatusDot,
 } from "@/features/applications/components/application-status-badge";
+import { formatDateTime } from "@/lib/dates";
 import type { HrApplicationStatusEvent } from "@/services/applications";
 import { cn } from "@/lib/utils";
 
@@ -49,7 +50,7 @@ export function ApplicationStatusHistory({
             )}
           </div>
           <p className="mt-1.5 text-xs text-muted-foreground">
-            {event.createdAt.toLocaleString()}
+            {formatDateTime(event.createdAt)}
             {event.changedByName ? ` · ${event.changedByName}` : " · System"}
           </p>
           {event.note ? (

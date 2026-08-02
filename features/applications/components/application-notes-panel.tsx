@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { addApplicationNoteAction } from "@/features/applications/actions/management.actions";
+import { formatDateTime } from "@/lib/dates";
 import type { HrApplicationNote } from "@/services/applications";
 
 type ApplicationNotesPanelProps = {
@@ -78,7 +79,7 @@ export function ApplicationNotesPanel({
                 {note.body}
               </p>
               <p className="mt-2 text-xs text-muted-foreground">
-                {note.createdAt.toLocaleString()}
+                {formatDateTime(note.createdAt)}
                 {note.authorName ? ` · ${note.authorName}` : ""}
               </p>
             </li>

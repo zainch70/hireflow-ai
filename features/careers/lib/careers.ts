@@ -1,6 +1,7 @@
 import type { EmploymentType } from "@/constants/employment-type";
 import { EMPLOYMENT_TYPES } from "@/constants/employment-type";
 import type { CareersFilterValues } from "@/features/careers/components/careers-filters";
+import { toIsoString, type TimestampNull } from "@/lib/dates";
 import type { PublishedJobFilters } from "@/services/jobs";
 
 const employmentTypeSet = new Set<string>(Object.values(EMPLOYMENT_TYPES));
@@ -45,7 +46,7 @@ export function buildJobPostingJsonLd(input: {
   slug: string;
   location: string | null;
   employmentType: string;
-  datePosted: Date | null;
+  datePosted: TimestampNull;
   salaryMin: number | null;
   salaryMax: number | null;
   salaryCurrency: string | null;
@@ -65,7 +66,7 @@ export function buildJobPostingJsonLd(input: {
     "@type": "JobPosting",
     title: input.title,
     description: input.description,
-    datePosted: (input.datePosted ?? new Date()).toISOString(),
+    datePosted: toIsoString(input.datePosted ?? new Date()),
     employmentType: employmentTypeMap[input.employmentType] ?? "FULL_TIME",
     hiringOrganization: {
       "@type": "Organization",

@@ -14,7 +14,8 @@ export type HrApplicationListItem = {
   resumeFileName: string | null;
   yearsOfExperience: number | null;
   aiScore: number | null;
-  createdAt: Date;
+  /** ISO string — always serialized before Data Cache / client tables. */
+  createdAt: string;
   jobTitle: string;
   jobSlug: string;
 };
@@ -52,7 +53,7 @@ export type HrApplicationsFilters = HrApplicationsSearchParams;
 export type HrApplicationNote = {
   id: string;
   body: string;
-  createdAt: Date;
+  createdAt: Date | string;
   authorName: string | null;
 };
 
@@ -61,7 +62,7 @@ export type HrApplicationStatusEvent = {
   fromStatus: ApplicationStatus | null;
   toStatus: ApplicationStatus;
   note: string | null;
-  createdAt: Date;
+  createdAt: Date | string;
   changedByName: string | null;
 };
 

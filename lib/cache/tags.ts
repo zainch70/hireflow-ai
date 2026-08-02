@@ -2,7 +2,12 @@ import { revalidatePath, revalidateTag } from "next/cache";
 
 import { ROUTES } from "@/constants/routes";
 
-/** Shared Next.js Data Cache tags for HR + careers reads. */
+/**
+ * Shared Next.js Data Cache tags for HR + careers reads.
+ *
+ * Cached loaders must return JSON-safe values (ISO date strings, not `Date`).
+ * See `lib/dates.ts` — cache hits revive timestamps as strings.
+ */
 export const CACHE_TAGS = {
   jobs: "jobs",
   applications: "applications",
