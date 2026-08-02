@@ -1,58 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { BrandMark } from "@/components/layouts/brand-mark";
 import { Container } from "@/components/layouts/container";
+import { PublicSiteHeader } from "@/features/careers/components/public-site-header";
 import { ROUTES } from "@/constants/routes";
-import { cn } from "@/lib/utils";
-
-type PublicSiteHeaderProps = {
-  active?: "home" | "careers";
-};
-
-export function PublicSiteHeader({ active }: PublicSiteHeaderProps) {
-  return (
-    <header className="sticky top-0 z-40 border-b border-border bg-card/90 backdrop-blur-md">
-      <Container className="flex h-14 items-center justify-between gap-4">
-        <BrandMark />
-        <nav aria-label="Primary" className="flex items-center gap-1 sm:gap-2">
-          <NavLink href={ROUTES.home} active={active === "home"}>
-            Home
-          </NavLink>
-          <NavLink href={ROUTES.careers} active={active === "careers"}>
-            Careers
-          </NavLink>
-        </nav>
-      </Container>
-    </header>
-  );
-}
-
-function NavLink({
-  href,
-  active,
-  children,
-}: {
-  href: string;
-  active?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      className={cn(
-        "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors outline-none",
-        "focus-visible:ring-3 focus-visible:ring-ring/35",
-        active
-          ? "bg-primary/10 text-primary"
-          : "text-muted-foreground hover:bg-muted hover:text-foreground",
-      )}
-      aria-current={active ? "page" : undefined}
-    >
-      {children}
-    </Link>
-  );
-}
 
 export function PublicSiteFooter() {
   return (
@@ -63,6 +14,7 @@ export function PublicSiteFooter() {
         </p>
         <Link
           href={ROUTES.careers}
+          prefetch
           className="text-sm font-medium text-primary hover:underline"
         >
           View open roles
@@ -74,13 +26,16 @@ export function PublicSiteFooter() {
 
 type PublicSiteShellProps = {
   children: ReactNode;
-  active?: "home" | "careers";
 };
 
-export function PublicSiteShell({ children, active }: PublicSiteShellProps) {
+/**
+ * Shared public chrome — lives in the marketing layout so header/footer
+ * stay mounted across soft navigations (instant feel).
+ */
+export function PublicSiteShell({ children }: PublicSiteShellProps) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <PublicSiteHeader active={active} />
+      <PublicSiteHeader />
       <div className="flex-1">{children}</div>
       <PublicSiteFooter />
     </div>

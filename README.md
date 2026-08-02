@@ -322,7 +322,9 @@ app/(dashboard)/hr/jobs/ # List / create / edit pages
 
 ```
 features/careers/        # Cards, filters, public shell, apply CTA
-app/(public)/careers/    # List + detail + apply routes
+app/(marketing)/          # Home + careers (shared PublicSiteShell)
+app/(marketing)/careers/  # List + detail + apply routes
+app/(public)/login/       # HR sign-in
 ```
 
 ## Applications list filters (for team members)

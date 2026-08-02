@@ -6,9 +6,8 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react", "recharts"],
     /**
-     * Soft-nav cache for dynamic HR pages. Default dynamic staleTime is 0,
-     * so every click waited on a full RSC stream — this keeps the last
-     * payload briefly and makes back/forth nav feel instant.
+     * Soft-nav client cache. Default dynamic staleTime is 0 (every click
+     * re-fetched). Public ISR + HR dynamic pages reuse the last payload briefly.
      */
     staleTimes: {
       dynamic: 60,
