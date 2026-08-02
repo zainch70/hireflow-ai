@@ -1,36 +1,117 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HireFlow AI
 
-## Getting Started
+AI-powered careers and recruitment portal. Candidates browse and apply to jobs; HR manages openings, applications, and AI-assisted screening.
 
-First, run the development server:
+> **Status:** Project foundation only. Auth, careers UI, dashboard, schemas, and AI flows are not implemented yet.
+
+## Tech stack
+
+- **Framework:** Next.js 15 (App Router), React 19, TypeScript
+- **UI:** Tailwind CSS, shadcn/ui, Lucide, Sonner, next-themes
+- **Data:** Supabase (Auth, Storage, PostgreSQL), Drizzle ORM
+- **Forms:** React Hook Form, Zod
+- **AI:** Vercel AI SDK + Google Gemini
+- **Other:** TanStack Table, Recharts, pdf-parse
+- **Tooling:** ESLint, Prettier, EditorConfig
+
+## Getting started
+
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env.local
+```
+
+Fill in values from your [Supabase](https://supabase.com/dashboard) project and [Google AI Studio](https://aistudio.google.com/apikey):
+
+| Variable | Purpose |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only admin key (never expose to the browser) |
+| `DATABASE_URL` | Postgres connection string for Drizzle |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini API key |
+| `NEXT_PUBLIC_APP_URL` | App URL (default `http://localhost:3000`) |
+
+### 3. Run the app
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start Next.js with Turbopack |
+| `npm run build` | Production build |
+| `npm run start` | Start production server |
+| `npm run lint` / `lint:fix` | ESLint |
+| `npm run format` / `format:check` | Prettier |
+| `npm run typecheck` | TypeScript (`tsc --noEmit`) |
+| `npm run db:generate` | Generate Drizzle migrations |
+| `npm run db:migrate` | Apply migrations |
+| `npm run db:push` | Push schema to the database |
+| `npm run db:studio` | Open Drizzle Studio |
 
-## Learn More
+## Architecture
 
-To learn more about Next.js, take a look at the following resources:
+Feature-based layout with clear separation of concerns:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+app/           # Routes & layouts (public + dashboard groups)
+components/    # Shared UI (shadcn in ui/)
+features/      # Domain modules (jobs, applications, etc.)
+services/      # Business orchestration
+db/            # Drizzle client, schema, migrations
+lib/           # Infrastructure (supabase, ai, auth, errors, uploads)
+schemas/       # Zod validation
+actions/       # Server Actions
+providers/     # Theme, Supabase, toasts
+constants/     # Routes, roles, statuses
+types/         # Shared TypeScript types
+hooks/         # Shared React hooks
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Guidelines**
 
-## Deploy on Vercel
+- Prefer Server Components; use Server Actions where mutations fit
+- Keep AI logic in `lib/ai`
+- Keep database access in `db/` / services — not in UI
+- Colocate feature UI, actions, and hooks under `features/<name>`
+- File names: kebab-case; Next.js `page` / `layout` files use default exports
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Current foundation
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Already configured:
+
+- Next.js App Router + TypeScript + Tailwind + shadcn/ui
+- Supabase clients (browser, server, middleware, admin)
+- Drizzle setup (no schemas yet)
+- Providers (theme, Supabase, toasts)
+- Auth helpers, middleware stub for `/hr/*`
+- Public and dashboard layout groups
+- Error / API response helpers
+- Upload validation stubs (PDF)
+- Gemini client factory (no prompts)
+- Routes, roles, and status constants
+
+## Planned next phases
+
+1. Drizzle schemas + migrations
+2. Authentication (pages + HR route protection)
+3. Public careers pages
+4. HR dashboard shell
+5. Job CRUD → applications → PDF upload → AI screening
+
+## License
+
+Private — all rights reserved.
