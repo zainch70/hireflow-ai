@@ -1,0 +1,34 @@
+import { createClient } from "@/lib/supabase/server";
+
+/**
+ * Authentication helpers (foundation only).
+ * Login UI and full route protection come in a later phase.
+ */
+
+export async function getSession() {
+  const supabase = await createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  return session;
+}
+
+export async function getUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  return user;
+}
+
+export async function requireUser() {
+  const user = await getUser();
+
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  return user;
+}
