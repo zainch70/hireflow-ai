@@ -12,8 +12,10 @@ import { ApplicationNotesPanel } from "@/features/applications/components/applic
 import { ApplicationStatusActions } from "@/features/applications/components/application-status-actions";
 import { ApplicationStatusBadge } from "@/features/applications/components/application-status-badge";
 import { ApplicationStatusHistory } from "@/features/applications/components/application-status-history";
+import { AiShortlistPanel } from "@/features/applications/components/ai-shortlist-panel";
 import { ResumeDownloadButton } from "@/features/applications/components/resume-download-button";
 import { getApplicationDetailForHr } from "@/services/applications";
+import { getLatestAiAnalysis } from "@/services/ai";
 
 type PageProps = {
   params: Promise<{ applicationId: string }>;
@@ -37,7 +39,10 @@ export async function generateMetadata({
 
 export default async function HrApplicationDetailPage({ params }: PageProps) {
   const { applicationId } = await params;
-  const detail = await getApplicationDetailForHr(applicationId);
+  const [detail, analysis] = await Promise.all([
+    getApplicationDetailForHr(applicationId),
+    getLatestAiAnalysis(applicationId),
+  ]);
 
   if (!detail) {
     notFound();
@@ -155,6 +160,16 @@ export default async function HrApplicationDetailPage({ params }: PageProps) {
         </div>
 
         <div className="space-y-6">
+          <SurfaceCard
+            title="AI shortlisting"
+            description="Structured Gemini match against this role."
+          >
+            <AiShortlistPanel
+              applicationId={application.id}
+              analysis={analysis}
+            />
+          </SurfaceCard>
+
           <SurfaceCard
             title="Pipeline"
             description="Update status and leave an optional note."

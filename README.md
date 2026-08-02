@@ -2,7 +2,7 @@
 
 AI-powered careers and recruitment portal. Candidates browse and apply to jobs; HR manages openings, applications, and AI-assisted screening.
 
-> **Status:** Foundation, database schema, **HR authentication**, **HR Dashboard** (Overview, Jobs, Applications, Statistics with TanStack tables), **Candidate management** (review / status history / notes), **Job Opening Management**, **public Careers**, **Candidate Applications**, **secure PDF resume upload**, and **PDF text extraction** (with Gemini OCR fallback for scanned PDFs) are in place. AI screening / shortlisting is not built yet.
+> **Status:** Foundation, database schema, **HR authentication**, **HR Dashboard**, **Candidate management**, **AI shortlisting** (Gemini structured JSON), **Job Opening Management**, **public Careers**, **Candidate Applications**, **secure PDF resume upload**, and **PDF text extraction** are in place.
 
 ## Tech stack
 
@@ -86,7 +86,7 @@ DATABASE_URL=postgresql://postgres.<project-ref>:YOUR_PASSWORD@aws-0-<region>.po
 | Variable | Purpose |
 | --- | --- |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Required by Vercel AI SDK (`@ai-sdk/google`) |
-| `GEMINI_API_KEYS` | Optional comma-separated key pool for later rotation |
+| `GEMINI_API_KEYS` | Optional comma-separated key pool for rotation / quota fallback |
 
 Create a key at [Google AI Studio](https://aistudio.google.com/apikey).
 
@@ -239,6 +239,43 @@ features/applications/components/application-notes-panel.tsx
 features/applications/actions/management.actions.ts
 services/applications/transitions.ts
 db/schema/application-status-history.ts
+```
+
+## AI shortlisting (for team members)
+
+### What exists
+
+- HR runs / reruns Gemini shortlisting on `/hr/applications/[id]`
+- Inputs: job requirements + description, application form, extracted `resume_text`
+- Structured JSON via Vercel AI SDK `generateObject` + Zod
+- Stored in `ai_analyses` (score, summary, strengths, concerns, skill matches, raw JSON)
+- UI: match score, recommendation, matching/missing skills, strengths, concerns, summary
+
+### Output fields
+
+| Field | Meaning |
+| --- | --- |
+| `matchScore` | 0–100 fit score |
+| `recommendation` | `strong_match` / `good_match` / `partial_match` / `poor_match` |
+| `matchingSkills` / `missingSkills` | Skill overlap vs gaps |
+| `strengths` / `concerns` | Bullet insights |
+| `summary` | Short HR narrative |
+
+### Requirements
+
+- `GOOGLE_GENERATIVE_AI_API_KEY` in `.env.local`
+- Optional `GEMINI_API_KEYS` (comma-separated) for key rotation when free-tier quota is hit
+- Model fallbacks: `gemini-2.5-flash-lite` → `2.5-flash` → `2.0-flash-lite` → `2.0-flash` → latest aliases
+
+### Key files
+
+```
+lib/ai/shortlist-schema.ts
+lib/ai/shortlist-prompt.ts
+services/ai/index.ts
+features/applications/actions/ai.actions.ts
+features/applications/components/ai-shortlist-panel.tsx
+db/schema/ai-analyses.ts
 ```
 
 ## Job Opening Management (for team members)
@@ -402,6 +439,7 @@ Already configured:
 - HR authentication (login, logout, middleware, role checks)
 - HR Dashboard (Overview, Jobs, Applications, Statistics)
 - Candidate management (status transitions, history, notes)
+- AI shortlisting (Gemini structured JSON → `ai_analyses`)
 - Job Opening Management (CRUD + publish / unpublish / close)
 - Public Careers pages (published list, detail, search/filter)
 - Candidate applications (form + private PDF resume upload + text extraction)
@@ -509,7 +547,7 @@ Include:
 - Future Improvements
 - Known Limitations
 
-> **Also still pending (earlier product work):** AI screening / shortlisting using stored `resume_text`.
+> **Also still pending (earlier product work):** richer AI criteria / auto-status updates from recommendations (optional).
 
 ## License
 

@@ -6,6 +6,7 @@ import {
   PDFParse,
 } from "pdf-parse";
 
+import { hasGeminiApiKey } from "@/lib/ai/client";
 import { ocrResumePageImage } from "@/lib/ai/ocr-resume";
 import { AppError } from "@/lib/errors/app-error";
 
@@ -71,7 +72,7 @@ async function extractViaOcr(bytes: Uint8Array): Promise<{
   text: string;
   pageCount: number;
 }> {
-  if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+  if (!hasGeminiApiKey()) {
     throw new AppError(
       "This PDF looks scanned (no selectable text). Configure GOOGLE_GENERATIVE_AI_API_KEY for OCR, or upload a text-based PDF.",
       {
