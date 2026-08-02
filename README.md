@@ -38,6 +38,13 @@ Publish a job → Candidate applies with PDF
              → HR Accept / Reject or moves status in the pipeline
 ```
 
+### Assignment compliance (important notes)
+
+- **Workflow over polish** — Careers → apply → HR review → AI → status is fully wired; UI is secondary to that path.
+- **Real AI, not fakes** — Shortlisting calls **Google Gemini** through the Vercel AI SDK (`generateObject` + Zod). Click **Run AI shortlisting** on a live application to get a real model response. Optional `npm run db:seed` may insert **demo** `ai_analyses` rows only so dashboards look populated; those are labeled in seed emails (`seed.*@hireflow.demo`) and are not a substitute for a live Gemini run.
+- **Incomplete features** are listed under [Known limitations](#known-limitations) (source of truth).
+- **Multi-HR ready** — several `hr` / `admin` profiles can sign in; applications can be **assigned** to a teammate. Jobs already store **department** and **location** (careers filters use them). Scaling further (orgs, RLS, notifications) is listed as future work.
+
 ### Deployed demo
 
 Live site: [https://hireflow-ai-v1.vercel.app/](https://hireflow-ai-v1.vercel.app/)
@@ -459,6 +466,7 @@ This section is the **source of truth** for gaps vs a full production hiring pro
 
 ### Demo / ops
 
+- `npm run db:seed` loads sample jobs/applications (and some demo AI rows for UI). Always demo a **real** Gemini run for reviewers.
 - Production still needs: private `resumes` bucket checked, Auth signup policy reviewed, env vars set on the host.
 
 ## Future improvements
