@@ -467,3 +467,10 @@ export async function getPublishedJobFilterOptions(): Promise<{
     { revalidate: 60, tags: [CACHE_TAGS.careers, CACHE_TAGS.jobs] },
   )();
 }
+
+export type { JobShortlistingCriterion } from "@/services/jobs/criteria";
+export {
+  listJobShortlistingCriteria,
+  replaceJobShortlistingCriteria,
+} from "@/services/jobs/criteria";
+

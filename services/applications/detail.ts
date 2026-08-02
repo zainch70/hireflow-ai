@@ -1,4 +1,4 @@
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
@@ -12,8 +12,10 @@ import {
   skills,
 } from "@/db/schema";
 import type { ApplicationStatus } from "@/constants/application-status";
+import { ROLES } from "@/constants/roles";
 import {
   applicationNotFoundError,
+  assigneeNotFoundError,
   invalidApplicationTransitionError,
 } from "@/services/applications/errors";
 import { getApplicationById } from "@/services/applications/get-by-id";
@@ -27,7 +29,7 @@ import type {
   HrApplicationNote,
 } from "@/services/applications/types";
 import { resumeNotFoundError } from "@/services/storage/errors";
-import { createResumeSignedUrl } from "@/services/storage";
+import { createResumeSignedUrl, deleteResumeObject } from "@/services/storage";
 
 /** HR-only: short-lived signed URL for a private resume. */
 export async function getApplicationResumeDownloadUrl(
@@ -65,7 +67,8 @@ export async function getApplicationDetailForHr(
     return null;
   }
 
-  const [educationRows, skillRows, noteRows, historyRows] = await Promise.all([
+  const [educationRows, skillRows, noteRows, historyRows, assigneeRow] =
+    await Promise.all([
     db
       .select({
         id: applicationEducation.id,
@@ -85,12 +88,13 @@ export async function getApplicationDetailForHr(
       .select({
         id: applicationSkills.id,
         name: skills.name,
+        category: skills.category,
         proficiency: applicationSkills.proficiency,
       })
       .from(applicationSkills)
       .innerJoin(skills, eq(applicationSkills.skillId, skills.id))
       .where(eq(applicationSkills.applicationId, applicationId))
-      .orderBy(asc(skills.name)),
+      .orderBy(asc(skills.category), asc(skills.name)),
     db
       .select({
         id: applicationNotes.id,
@@ -118,14 +122,27 @@ export async function getApplicationDetailForHr(
       )
       .where(eq(applicationStatusHistory.applicationId, applicationId))
       .orderBy(desc(applicationStatusHistory.createdAt)),
+    row.application.assignedToId
+      ? db
+          .select({
+            fullName: profiles.fullName,
+            email: profiles.email,
+          })
+          .from(profiles)
+          .where(eq(profiles.id, row.application.assignedToId))
+          .limit(1)
+      : Promise.resolve([] as Array<{ fullName: string; email: string }>),
   ]);
 
   const status = row.application.status as ApplicationStatus;
+  const assignee = assigneeRow[0] ?? null;
 
   return {
     application: row.application,
     jobTitle: row.jobTitle,
     jobSlug: row.jobSlug,
+    assigneeName: assignee?.fullName ?? null,
+    assigneeEmail: assignee?.email ?? null,
     education: educationRows,
     skills: skillRows,
     notes: noteRows,
@@ -231,4 +248,94 @@ export async function addApplicationNote(input: {
     createdAt: created.createdAt,
     authorName: author?.fullName ?? null,
   };
+}
+
+export async function assignApplication(input: {
+  applicationId: string;
+  assigneeId: string | null;
+}): Promise<Application> {
+  const application = await getApplicationById(input.applicationId);
+  if (!application) {
+    throw applicationNotFoundError();
+  }
+
+  if (input.assigneeId) {
+    const [member] = await db
+      .select({ id: profiles.id })
+      .from(profiles)
+      .where(
+        and(
+          eq(profiles.id, input.assigneeId),
+          inArray(profiles.role, [ROLES.HR, ROLES.ADMIN]),
+          eq(profiles.isActive, true),
+        ),
+      )
+      .limit(1);
+    if (!member) {
+      throw assigneeNotFoundError();
+    }
+  }
+
+  const [updated] = await db
+    .update(applications)
+    .set({ assignedToId: input.assigneeId })
+    .where(eq(applications.id, input.applicationId))
+    .returning();
+
+  if (!updated) {
+    throw applicationNotFoundError();
+  }
+
+  return updated;
+}
+
+export async function setApplicationArchived(input: {
+  applicationId: string;
+  archived: boolean;
+}): Promise<Application> {
+  const application = await getApplicationById(input.applicationId);
+  if (!application) {
+    throw applicationNotFoundError();
+  }
+
+  const [updated] = await db
+    .update(applications)
+    .set({ archivedAt: input.archived ? new Date() : null })
+    .where(eq(applications.id, input.applicationId))
+    .returning();
+
+  if (!updated) {
+    throw applicationNotFoundError();
+  }
+
+  return updated;
+}
+
+/** Permanently delete an application and its cascaded rows; remove resume object. */
+export async function deleteApplication(input: {
+  applicationId: string;
+}): Promise<void> {
+  const application = await getApplicationById(input.applicationId);
+  if (!application) {
+    throw applicationNotFoundError();
+  }
+
+  const resumePath = application.resumePath;
+
+  const deleted = await db
+    .delete(applications)
+    .where(eq(applications.id, input.applicationId))
+    .returning({ id: applications.id });
+
+  if (deleted.length === 0) {
+    throw applicationNotFoundError();
+  }
+
+  if (resumePath) {
+    try {
+      await deleteResumeObject(resumePath);
+    } catch {
+      // Application row is already gone — don't fail the HR action on storage cleanup.
+    }
+  }
 }

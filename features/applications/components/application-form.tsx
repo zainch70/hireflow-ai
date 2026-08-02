@@ -23,6 +23,15 @@ import {
   EDUCATION_LEVELS,
   type EducationLevel,
 } from "@/constants/education-level";
+import {
+  EMPLOYMENT_STATUS_LABELS,
+  EMPLOYMENT_STATUSES,
+} from "@/constants/employment-status";
+import {
+  SKILL_CATEGORIES,
+  SKILL_CATEGORY_LABELS,
+  type SkillCategory,
+} from "@/constants/skill-category";
 import { careersApplySuccessPath } from "@/constants/routes";
 import { submitApplicationAction } from "@/features/applications/actions/application.actions";
 import {
@@ -34,6 +43,8 @@ import { UPLOAD_CONSTRAINTS, validatePdfFileMeta } from "@/lib/uploads";
 import { cn } from "@/lib/utils";
 
 const educationLevelOptions = Object.values(EDUCATION_LEVELS);
+const employmentStatusOptions = Object.values(EMPLOYMENT_STATUSES);
+const skillCategoryOptions = Object.values(SKILL_CATEGORIES);
 
 const emptyEducation = {
   institution: "",
@@ -42,12 +53,14 @@ const emptyEducation = {
   educationLevel: "" as const,
   startDate: "",
   endDate: "",
+  graduationYear: undefined as number | undefined,
   isCurrent: false,
   grade: "",
 };
 
 const emptySkill = {
   name: "",
+  category: SKILL_CATEGORIES.TECHNICAL as SkillCategory,
   proficiency: "",
 };
 
@@ -74,13 +87,23 @@ export function ApplicationForm({ jobSlug, jobTitle }: ApplicationFormProps) {
       fullName: "",
       email: "",
       phone: "",
+      currentLocation: "",
       currentTitle: "",
+      currentCompany: "",
       linkedinUrl: "",
       portfolioUrl: "",
+      githubUrl: "",
       yearsOfExperience: undefined,
+      expectedSalary: "",
+      noticePeriod: "",
+      employmentStatus: EMPLOYMENT_STATUSES.EMPLOYED,
       education: [{ ...emptyEducation }],
       skills: [{ ...emptySkill }],
       workExperience: "",
+      interestReason: "",
+      whyConsider: "",
+      willingOnsite: false,
+      availableJoinDate: "",
       coverLetter: "",
     },
   });
@@ -202,57 +225,37 @@ export function ApplicationForm({ jobSlug, jobTitle }: ApplicationFormProps) {
           <Field
             label="Phone"
             htmlFor="phone"
-            optional
+            required
             error={errors.phone?.message}
           >
             <Input
               id="phone"
               type="tel"
               autoComplete="tel"
+              required
+              aria-required="true"
               aria-invalid={Boolean(errors.phone)}
               disabled={isPending}
               {...register("phone")}
             />
           </Field>
-        </div>
-      </FormSection>
-
-      <FormSection
-        title="Professional information"
-        description="Your current role and public profiles."
-      >
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field
-            label="Current title"
-            htmlFor="currentTitle"
-            optional
-            error={errors.currentTitle?.message}
-          >
-            <Input
-              id="currentTitle"
-              placeholder="Frontend Engineer"
-              aria-invalid={Boolean(errors.currentTitle)}
-              disabled={isPending}
-              {...register("currentTitle")}
-            />
-          </Field>
 
           <Field
-            label="Years of experience"
-            htmlFor="yearsOfExperience"
-            optional
-            error={errors.yearsOfExperience?.message}
+            label="Current location"
+            htmlFor="currentLocation"
+            required
+            error={errors.currentLocation?.message}
+            className="sm:col-span-2"
           >
             <Input
-              id="yearsOfExperience"
-              type="number"
-              inputMode="numeric"
-              min={0}
-              max={60}
-              placeholder="4"
-              aria-invalid={Boolean(errors.yearsOfExperience)}
+              id="currentLocation"
+              autoComplete="address-level2"
+              placeholder="City, country"
+              required
+              aria-required="true"
+              aria-invalid={Boolean(errors.currentLocation)}
               disabled={isPending}
-              {...register("yearsOfExperience")}
+              {...register("currentLocation")}
             />
           </Field>
 
@@ -286,6 +289,142 @@ export function ApplicationForm({ jobSlug, jobTitle }: ApplicationFormProps) {
               disabled={isPending}
               {...register("portfolioUrl")}
             />
+          </Field>
+
+          <Field
+            label="GitHub URL"
+            htmlFor="githubUrl"
+            optional
+            error={errors.githubUrl?.message}
+            className="sm:col-span-2"
+          >
+            <Input
+              id="githubUrl"
+              type="url"
+              placeholder="https://github.com/…"
+              aria-invalid={Boolean(errors.githubUrl)}
+              disabled={isPending}
+              {...register("githubUrl")}
+            />
+          </Field>
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="Professional information"
+        description="Your current role, experience, and availability."
+      >
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field
+            label="Current job title"
+            htmlFor="currentTitle"
+            required
+            error={errors.currentTitle?.message}
+          >
+            <Input
+              id="currentTitle"
+              placeholder="Frontend Engineer"
+              required
+              aria-required="true"
+              aria-invalid={Boolean(errors.currentTitle)}
+              disabled={isPending}
+              {...register("currentTitle")}
+            />
+          </Field>
+
+          <Field
+            label="Current company"
+            htmlFor="currentCompany"
+            optional
+            error={errors.currentCompany?.message}
+          >
+            <Input
+              id="currentCompany"
+              placeholder="Company name"
+              aria-invalid={Boolean(errors.currentCompany)}
+              disabled={isPending}
+              {...register("currentCompany")}
+            />
+          </Field>
+
+          <Field
+            label="Years of experience"
+            htmlFor="yearsOfExperience"
+            required
+            error={errors.yearsOfExperience?.message}
+          >
+            <Input
+              id="yearsOfExperience"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={60}
+              placeholder="4"
+              required
+              aria-required="true"
+              aria-invalid={Boolean(errors.yearsOfExperience)}
+              disabled={isPending}
+              {...register("yearsOfExperience")}
+            />
+          </Field>
+
+          <Field
+            label="Expected salary"
+            htmlFor="expectedSalary"
+            optional
+            error={errors.expectedSalary?.message}
+          >
+            <Input
+              id="expectedSalary"
+              placeholder="e.g. 80,000 USD / year"
+              aria-invalid={Boolean(errors.expectedSalary)}
+              disabled={isPending}
+              {...register("expectedSalary")}
+            />
+          </Field>
+
+          <Field
+            label="Notice period"
+            htmlFor="noticePeriod"
+            required
+            error={errors.noticePeriod?.message}
+          >
+            <Input
+              id="noticePeriod"
+              placeholder="e.g. Immediate, 30 days"
+              required
+              aria-required="true"
+              aria-invalid={Boolean(errors.noticePeriod)}
+              disabled={isPending}
+              {...register("noticePeriod")}
+            />
+          </Field>
+
+          <Field
+            label="Employment status"
+            htmlFor="employmentStatus"
+            required
+            error={errors.employmentStatus?.message}
+          >
+            <select
+              id="employmentStatus"
+              required
+              aria-required="true"
+              aria-invalid={Boolean(errors.employmentStatus) || undefined}
+              disabled={isPending}
+              className={cn(
+                "flex h-10 w-full rounded-xl border border-input bg-card px-3 py-2 text-sm outline-none",
+                "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/35",
+                "disabled:cursor-not-allowed disabled:opacity-50",
+              )}
+              {...register("employmentStatus")}
+            >
+              {employmentStatusOptions.map((value) => (
+                <option key={value} value={value}>
+                  {EMPLOYMENT_STATUS_LABELS[value]}
+                </option>
+              ))}
+            </select>
           </Field>
         </div>
       </FormSection>
@@ -383,7 +522,7 @@ export function ApplicationForm({ jobSlug, jobTitle }: ApplicationFormProps) {
 
       <FormSection
         title="Skills"
-        description="List skills relevant to this role. We’ll save them to your application."
+        description="Add skills by category (technical, software & platforms, programming languages, AI-related, and more)."
         action={
           <Button
             type="button"
@@ -426,7 +565,32 @@ export function ApplicationForm({ jobSlug, jobTitle }: ApplicationFormProps) {
                 ) : null}
               </div>
 
-              <div className="grid gap-5 sm:grid-cols-2">
+              <div className="grid gap-5 sm:grid-cols-3">
+                <Field
+                  label="Category"
+                  htmlFor={`skill-${index}-category`}
+                  required
+                  error={errors.skills?.[index]?.category?.message}
+                >
+                  <select
+                    id={`skill-${index}-category`}
+                    required
+                    aria-required="true"
+                    disabled={isPending}
+                    className={cn(
+                      "h-10 w-full rounded-xl border border-input bg-card px-3 text-sm outline-none transition-colors",
+                      "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/35",
+                    )}
+                    {...register(`skills.${index}.category`)}
+                  >
+                    {skillCategoryOptions.map((category) => (
+                      <option key={category} value={category}>
+                        {SKILL_CATEGORY_LABELS[category]}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+
                 <Field
                   label="Skill"
                   htmlFor={`skill-${index}-name`}
@@ -487,23 +651,92 @@ export function ApplicationForm({ jobSlug, jobTitle }: ApplicationFormProps) {
 
       <FormSection
         title="Additional questions"
-        description="Anything else we should know (motivation, availability, constraints)."
+        description="Help us understand fit, availability, and motivation for this role."
       >
-        <Field
-          label="Additional notes"
-          htmlFor="coverLetter"
-          optional
-          error={errors.coverLetter?.message}
-        >
-          <Textarea
-            id="coverLetter"
-            placeholder="Optional — share context that doesn’t fit above."
-            className="min-h-28"
-            aria-invalid={Boolean(errors.coverLetter)}
-            disabled={isPending}
-            {...register("coverLetter")}
-          />
-        </Field>
+        <div className="space-y-5">
+          <Field
+            label="Why are you interested in this position?"
+            htmlFor="interestReason"
+            required
+            error={errors.interestReason?.message}
+          >
+            <Textarea
+              id="interestReason"
+              placeholder="What draws you to this role and HireFlow?"
+              className="min-h-28"
+              required
+              aria-required="true"
+              aria-invalid={Boolean(errors.interestReason)}
+              disabled={isPending}
+              {...register("interestReason")}
+            />
+          </Field>
+
+          <Field
+            label="Why should we consider you?"
+            htmlFor="whyConsider"
+            required
+            error={errors.whyConsider?.message}
+          >
+            <Textarea
+              id="whyConsider"
+              placeholder="Relevant strengths, outcomes, or experience for this role."
+              className="min-h-28"
+              required
+              aria-required="true"
+              aria-invalid={Boolean(errors.whyConsider)}
+              disabled={isPending}
+              {...register("whyConsider")}
+            />
+          </Field>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Field
+              label="Available joining date"
+              htmlFor="availableJoinDate"
+              required
+              error={errors.availableJoinDate?.message}
+            >
+              <Input
+                id="availableJoinDate"
+                type="date"
+                required
+                aria-required="true"
+                aria-invalid={Boolean(errors.availableJoinDate)}
+                disabled={isPending}
+                {...register("availableJoinDate")}
+              />
+            </Field>
+
+            <div className="flex items-end pb-1">
+              <label className="flex items-center gap-2 text-sm text-foreground">
+                <input
+                  type="checkbox"
+                  className="size-4 rounded border-input"
+                  disabled={isPending}
+                  {...register("willingOnsite")}
+                />
+                Willing to work on-site
+              </label>
+            </div>
+          </div>
+
+          <Field
+            label="Additional notes"
+            htmlFor="coverLetter"
+            optional
+            error={errors.coverLetter?.message}
+          >
+            <Textarea
+              id="coverLetter"
+              placeholder="Optional — anything else we should know."
+              className="min-h-24"
+              aria-invalid={Boolean(errors.coverLetter)}
+              disabled={isPending}
+              {...register("coverLetter")}
+            />
+          </Field>
+        </div>
       </FormSection>
 
       {errors.root?.message ? (
@@ -646,6 +879,25 @@ function EducationEntryCard({
         </Field>
 
         <Field
+          label="Graduation year"
+          htmlFor={`education-${index}-grad-year`}
+          required={!isCurrent}
+          optional={Boolean(isCurrent)}
+          error={errors.education?.[index]?.graduationYear?.message}
+        >
+          <Input
+            id={`education-${index}-grad-year`}
+            type="number"
+            min={1950}
+            max={2100}
+            step={1}
+            placeholder="2024"
+            disabled={isPending || Boolean(isCurrent)}
+            {...register(`education.${index}.graduationYear`)}
+          />
+        </Field>
+
+        <Field
           label="Start date"
           htmlFor={`education-${index}-start`}
           optional
@@ -661,7 +913,7 @@ function EducationEntryCard({
         </Field>
 
         <Field
-          label="End date"
+          label="Exact end date"
           htmlFor={`education-${index}-end`}
           optional
           error={errors.education?.[index]?.endDate?.message}

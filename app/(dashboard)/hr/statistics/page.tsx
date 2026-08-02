@@ -27,9 +27,9 @@ export default async function HrStatisticsPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard label="Applications" value={stats.applicationsTotal} />
-        <MetricCard label="AI screened" value={stats.aiScreenedTotal} />
+        <MetricCard label="AI shortlisted" value={stats.aiScreenedTotal} />
         <MetricCard label="Published jobs" value={stats.publishedJobs} />
-        <MetricCard label="Shortlisted" value={stats.shortlistedApplications} />
+        <MetricCard label="Selected" value={stats.shortlistedApplications} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

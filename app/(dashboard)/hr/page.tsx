@@ -32,13 +32,20 @@ export default async function HrHomePage() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
         <MetricCard label="Published jobs" value={stats.publishedJobs} />
-        <MetricCard label="Drafts" value={stats.draftJobs} />
-        <MetricCard label="Closed" value={stats.closedJobs} />
         <MetricCard label="Applications" value={stats.applicationsTotal} />
-        <MetricCard label="Submitted" value={stats.submittedApplications} />
-        <MetricCard label="Shortlisted" value={stats.shortlistedApplications} />
+        <MetricCard label="AI shortlisted" value={stats.aiScreenedTotal} />
+        <MetricCard label="Drafts" value={stats.draftJobs} />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <MetricCard label="New" value={stats.submittedApplications} />
+        <MetricCard label="Under review" value={stats.underReviewApplications} />
+        <MetricCard label="Selected" value={stats.shortlistedApplications} />
+        <MetricCard label="Interview" value={stats.interviewApplications} />
+        <MetricCard label="Rejected" value={stats.rejectedApplications} />
+        <MetricCard label="Hired" value={stats.hiredApplications} />
       </div>
 
       {stats.jobsTotal === 0 && stats.applicationsTotal === 0 ? (
@@ -54,6 +61,44 @@ export default async function HrHomePage() {
         />
       ) : (
         <div className="grid gap-6 lg:grid-cols-2">
+          <SurfaceCard
+            title="Applications by job"
+            description="Open pipeline volume per opening."
+            footer={
+              <Link
+                href={ROUTES.dashboard.applications}
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                View applications
+              </Link>
+            }
+          >
+            {stats.applicationsByJob.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No applications yet.
+              </p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {stats.applicationsByJob.map((row) => (
+                  <li
+                    key={row.jobId}
+                    className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                  >
+                    <Link
+                      href={`${ROUTES.dashboard.applications}?jobId=${row.jobId}`}
+                      className="min-w-0 truncate font-medium hover:underline"
+                    >
+                      {row.jobTitle}
+                    </Link>
+                    <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
+                      {row.count}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SurfaceCard>
+
           <SurfaceCard
             title="Recent jobs"
             description="Latest updates across your openings."
@@ -100,6 +145,7 @@ export default async function HrHomePage() {
           <SurfaceCard
             title="Recent applications"
             description="Newest candidate submissions."
+            className="lg:col-span-2"
             footer={
               <Link
                 href={ROUTES.dashboard.applications}
@@ -114,11 +160,11 @@ export default async function HrHomePage() {
                 No applications yet.
               </p>
             ) : (
-              <ul className="divide-y divide-border">
+              <ul className="divide-y divide-border sm:columns-2 sm:gap-x-8">
                 {stats.recentApplications.map((application) => (
                   <li
                     key={application.id}
-                    className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                    className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0 break-inside-avoid"
                   >
                     <div className="min-w-0">
                       <Link

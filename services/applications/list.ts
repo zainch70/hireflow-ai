@@ -1,8 +1,27 @@
-import { and, asc, count, desc, eq, gte, ilike, lte, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  exists,
+  gte,
+  ilike,
+  isNull,
+  lte,
+  sql,
+} from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 
 import { db } from "@/db";
-import { aiAnalyses, applications, jobs } from "@/db/schema";
+import {
+  aiAnalyses,
+  applicationEducation,
+  applicationSkills,
+  applications,
+  jobs,
+  skills,
+} from "@/db/schema";
 import { CACHE_TAGS } from "@/lib/cache/tags";
 import { toIsoString } from "@/lib/dates";
 import {
@@ -36,6 +55,10 @@ function latestAiScoreSql() {
 function buildHrApplicationConditions(filters: Partial<HrApplicationsFilters>) {
   const conditions = [];
 
+  if (!filters.includeArchived) {
+    conditions.push(isNull(applications.archivedAt));
+  }
+
   const name = sanitizeLikeTerm(filters.name);
   if (name) {
     conditions.push(ilike(applications.fullName, `%${name}%`));
@@ -44,6 +67,11 @@ function buildHrApplicationConditions(filters: Partial<HrApplicationsFilters>) {
   const email = sanitizeLikeTerm(filters.email);
   if (email) {
     conditions.push(ilike(applications.email, `%${email}%`));
+  }
+
+  const location = sanitizeLikeTerm(filters.location);
+  if (location) {
+    conditions.push(ilike(applications.currentLocation, `%${location}%`));
   }
 
   if (filters.jobId) {
@@ -71,6 +99,62 @@ function buildHrApplicationConditions(filters: Partial<HrApplicationsFilters>) {
   if (filters.dateTo) {
     conditions.push(
       lte(applications.createdAt, new Date(`${filters.dateTo}T23:59:59.999Z`)),
+    );
+  }
+
+  const skill = sanitizeLikeTerm(filters.skill);
+  if (skill) {
+    conditions.push(
+      exists(
+        db
+          .select({ id: applicationSkills.id })
+          .from(applicationSkills)
+          .innerJoin(skills, eq(applicationSkills.skillId, skills.id))
+          .where(
+            and(
+              eq(applicationSkills.applicationId, applications.id),
+              ilike(skills.name, `%${skill}%`),
+            ),
+          ),
+      ),
+    );
+  }
+
+  const qualification = sanitizeLikeTerm(filters.qualification);
+  if (qualification) {
+    conditions.push(
+      exists(
+        db
+          .select({ id: applicationEducation.id })
+          .from(applicationEducation)
+          .where(
+            and(
+              eq(applicationEducation.applicationId, applications.id),
+              sql`(
+                ${applicationEducation.degree} ILIKE ${`%${qualification}%`}
+                OR ${applicationEducation.fieldOfStudy} ILIKE ${`%${qualification}%`}
+                OR CAST(${applicationEducation.educationLevel} AS text) ILIKE ${`%${qualification}%`}
+              )`,
+            ),
+          ),
+      ),
+    );
+  }
+
+  if (filters.graduationYear != null) {
+    const year = filters.graduationYear;
+    conditions.push(
+      exists(
+        db
+          .select({ id: applicationEducation.id })
+          .from(applicationEducation)
+          .where(
+            and(
+              eq(applicationEducation.applicationId, applications.id),
+              sql`EXTRACT(YEAR FROM ${applicationEducation.endDate}) = ${year}`,
+            ),
+          ),
+      ),
     );
   }
 
@@ -132,6 +216,11 @@ export async function listApplicationsForHr(
       String(filters.experienceMax ?? ""),
       filters.dateFrom ?? "",
       filters.dateTo ?? "",
+      filters.location ?? "",
+      filters.skill ?? "",
+      filters.qualification ?? "",
+      String(filters.graduationYear ?? ""),
+      filters.includeArchived ? "1" : "0",
       String(page),
       String(pageSize),
       sort,
@@ -282,6 +371,7 @@ export async function listRecentApplicationsForHr(
     })
     .from(applications)
     .innerJoin(jobs, eq(applications.jobId, jobs.id))
+    .where(isNull(applications.archivedAt))
     .orderBy(desc(applications.createdAt))
     .limit(limit);
 
@@ -310,6 +400,7 @@ export async function countApplicationsGroupedByStatus(): Promise<
       count: count(),
     })
     .from(applications)
+    .where(isNull(applications.archivedAt))
     .groupBy(applications.status);
 
   return rows.map((row) => ({
@@ -330,7 +421,9 @@ export async function countApplicationsOverTime(
       count: count(),
     })
     .from(applications)
-    .where(gte(applications.createdAt, since))
+    .where(
+      and(gte(applications.createdAt, since), isNull(applications.archivedAt)),
+    )
     .groupBy(sql`date_trunc('day', ${applications.createdAt})`)
     .orderBy(sql`date_trunc('day', ${applications.createdAt})`);
 

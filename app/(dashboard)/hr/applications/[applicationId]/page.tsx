@@ -6,8 +6,16 @@ import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/layouts/page-header";
 import { SurfaceCard } from "@/components/layouts/surface-card";
 import { Badge } from "@/components/ui/badge";
-import { type ApplicationStatus } from "@/constants/application-status";
+import {
+  APPLICATION_STATUS,
+  type ApplicationStatus,
+} from "@/constants/application-status";
+import { EMPLOYMENT_STATUS_LABELS } from "@/constants/employment-status";
+import { getSkillCategoryLabel } from "@/constants/skill-category";
 import { ROUTES } from "@/constants/routes";
+import { ApplicationArchiveButton } from "@/features/applications/components/application-archive-button";
+import { ApplicationAssignPanel } from "@/features/applications/components/application-assign-panel";
+import { ApplicationDeleteButton } from "@/features/applications/components/application-delete-button";
 import { ApplicationNotesPanel } from "@/features/applications/components/application-notes-panel";
 import { ApplicationStatusActions } from "@/features/applications/components/application-status-actions";
 import { ApplicationStatusBadge } from "@/features/applications/components/application-status-badge";
@@ -16,6 +24,7 @@ import { AiShortlistPanel } from "@/features/applications/components/ai-shortlis
 import { ResumeDownloadButton } from "@/features/applications/components/resume-download-button";
 import { getApplicationDetailForHr } from "@/services/applications";
 import { getLatestAiAnalysis } from "@/services/ai";
+import { listHrTeamMembers } from "@/services/hr-team";
 
 type PageProps = {
   params: Promise<{ applicationId: string }>;
@@ -39,9 +48,10 @@ export async function generateMetadata({
 
 export default async function HrApplicationDetailPage({ params }: PageProps) {
   const { applicationId } = await params;
-  const [detail, analysis] = await Promise.all([
+  const [detail, analysis, team] = await Promise.all([
     getApplicationDetailForHr(applicationId),
     getLatestAiAnalysis(applicationId),
+    listHrTeamMembers(),
   ]);
 
   if (!detail) {
@@ -50,6 +60,12 @@ export default async function HrApplicationDetailPage({ params }: PageProps) {
 
   const { application } = detail;
   const status = application.status as ApplicationStatus;
+  const canAccept = detail.allowedTransitions.includes(
+    APPLICATION_STATUS.SHORTLISTED,
+  );
+  const canReject = detail.allowedTransitions.includes(
+    APPLICATION_STATUS.REJECTED,
+  );
 
   return (
     <div className="space-y-8">
@@ -68,12 +84,25 @@ export default async function HrApplicationDetailPage({ params }: PageProps) {
           actions={
             <div className="flex flex-wrap items-center gap-2">
               <ApplicationStatusBadge status={status} />
+              {application.archivedAt ? (
+                <Badge variant="outline" className="font-normal">
+                  Archived
+                </Badge>
+              ) : null}
               {application.resumePath ? (
                 <ResumeDownloadButton
                   applicationId={application.id}
                   fileName={application.resumeFileName}
                 />
               ) : null}
+              <ApplicationArchiveButton
+                applicationId={application.id}
+                archivedAt={application.archivedAt}
+              />
+              <ApplicationDeleteButton
+                applicationId={application.id}
+                candidateName={application.fullName}
+              />
             </div>
           }
         />
@@ -85,7 +114,15 @@ export default async function HrApplicationDetailPage({ params }: PageProps) {
             <dl className="grid gap-3 sm:grid-cols-2">
               <DetailItem label="Email" value={application.email} />
               <DetailItem label="Phone" value={application.phone} />
+              <DetailItem
+                label="Current location"
+                value={application.currentLocation}
+              />
               <DetailItem label="Current title" value={application.currentTitle} />
+              <DetailItem
+                label="Current company"
+                value={application.currentCompany}
+              />
               <DetailItem
                 label="Years of experience"
                 value={
@@ -93,6 +130,35 @@ export default async function HrApplicationDetailPage({ params }: PageProps) {
                     ? String(application.yearsOfExperience)
                     : null
                 }
+              />
+              <DetailItem
+                label="Expected salary"
+                value={application.expectedSalary}
+              />
+              <DetailItem label="Notice period" value={application.noticePeriod} />
+              <DetailItem
+                label="Employment status"
+                value={
+                  application.employmentStatus
+                    ? (EMPLOYMENT_STATUS_LABELS[
+                        application.employmentStatus as keyof typeof EMPLOYMENT_STATUS_LABELS
+                      ] ?? application.employmentStatus)
+                    : null
+                }
+              />
+              <DetailItem
+                label="Willing on-site"
+                value={
+                  application.willingOnsite == null
+                    ? null
+                    : application.willingOnsite
+                      ? "Yes"
+                      : "No"
+                }
+              />
+              <DetailItem
+                label="Available join date"
+                value={application.availableJoinDate}
               />
               <DetailItem
                 label="LinkedIn"
@@ -104,6 +170,11 @@ export default async function HrApplicationDetailPage({ params }: PageProps) {
                 value={application.portfolioUrl}
                 href={application.portfolioUrl}
               />
+              <DetailItem
+                label="GitHub"
+                value={application.githubUrl}
+                href={application.githubUrl}
+              />
             </dl>
           </SurfaceCard>
 
@@ -111,6 +182,30 @@ export default async function HrApplicationDetailPage({ params }: PageProps) {
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
               {application.workExperience || "—"}
             </p>
+          </SurfaceCard>
+
+          <SurfaceCard
+            title="Motivation & fit"
+            description="Answers from the application form."
+          >
+            <div className="space-y-4 text-sm">
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  Why interested in this position
+                </p>
+                <p className="mt-1 whitespace-pre-wrap leading-relaxed text-foreground">
+                  {application.interestReason || "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  Why we should consider you
+                </p>
+                <p className="mt-1 whitespace-pre-wrap leading-relaxed text-foreground">
+                  {application.whyConsider || "—"}
+                </p>
+              </div>
+            </div>
           </SurfaceCard>
 
           {application.coverLetter ? (
@@ -133,6 +228,11 @@ export default async function HrApplicationDetailPage({ params }: PageProps) {
                       {[entry.degree, entry.fieldOfStudy]
                         .filter(Boolean)
                         .join(" · ") || "—"}
+                      {entry.endDate
+                        ? ` · Graduated ${entry.endDate.slice(0, 4)}`
+                        : entry.isCurrent
+                          ? " · In progress"
+                          : ""}
                       {entry.grade ? ` · ${entry.grade}` : ""}
                     </p>
                   </li>
@@ -145,16 +245,36 @@ export default async function HrApplicationDetailPage({ params }: PageProps) {
             {detail.skills.length === 0 ? (
               <p className="text-sm text-muted-foreground">No skills listed.</p>
             ) : (
-              <ul className="flex flex-wrap gap-2">
-                {detail.skills.map((skill) => (
-                  <li key={skill.id}>
-                    <Badge variant="secondary" className="font-normal">
-                      {skill.name}
-                      {skill.proficiency ? ` · ${skill.proficiency}` : ""}
-                    </Badge>
-                  </li>
+              <div className="space-y-4">
+                {Object.entries(
+                  detail.skills.reduce<
+                    Record<string, typeof detail.skills>
+                  >((groups, skill) => {
+                    const key = skill.category ?? "other";
+                    if (!groups[key]) {
+                      groups[key] = [];
+                    }
+                    groups[key].push(skill);
+                    return groups;
+                  }, {}),
+                ).map(([category, skills]) => (
+                  <div key={category}>
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      {getSkillCategoryLabel(category)}
+                    </p>
+                    <ul className="mt-2 flex flex-wrap gap-2">
+                      {skills.map((skill) => (
+                        <li key={skill.id}>
+                          <Badge variant="secondary" className="font-normal">
+                            {skill.name}
+                            {skill.proficiency ? ` · ${skill.proficiency}` : ""}
+                          </Badge>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
           </SurfaceCard>
         </div>
@@ -167,6 +287,20 @@ export default async function HrApplicationDetailPage({ params }: PageProps) {
             <AiShortlistPanel
               applicationId={application.id}
               analysis={analysis}
+              canAccept={canAccept}
+              canReject={canReject}
+            />
+          </SurfaceCard>
+
+          <SurfaceCard
+            title="Assignment"
+            description="Own this application on the HR team."
+          >
+            <ApplicationAssignPanel
+              applicationId={application.id}
+              assignedToId={application.assignedToId}
+              assigneeName={detail.assigneeName}
+              team={team}
             />
           </SurfaceCard>
 

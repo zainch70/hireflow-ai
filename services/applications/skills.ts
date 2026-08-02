@@ -1,4 +1,4 @@
-import { inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 import { db } from "@/db";
 import { skills } from "@/db/schema";
@@ -22,7 +22,7 @@ export async function resolveApplicationSkills(
 ): Promise<ResolvedApplicationSkill[]> {
   const uniqueBySlug = new Map<
     string,
-    { name: string; proficiency: string | null }
+    { name: string; category: string; proficiency: string | null }
   >();
 
   for (const skill of skillInputs) {
@@ -32,6 +32,7 @@ export async function resolveApplicationSkills(
     if (!uniqueBySlug.has(slug)) {
       uniqueBySlug.set(slug, {
         name,
+        category: skill.category,
         proficiency: skill.proficiency ?? null,
       });
     }
@@ -44,15 +45,34 @@ export async function resolveApplicationSkills(
   }
 
   const existing = await tx
-    .select({ id: skills.id, slug: skills.slug })
+    .select({
+      id: skills.id,
+      slug: skills.slug,
+      category: skills.category,
+    })
     .from(skills)
     .where(inArray(skills.slug, slugs));
 
   const idBySlug = new Map(existing.map((row) => [row.slug, row.id]));
 
+  // Refresh category on catalog rows when the applicant provides one.
+  for (const row of existing) {
+    const incoming = uniqueBySlug.get(row.slug);
+    if (incoming && incoming.category !== row.category) {
+      await tx
+        .update(skills)
+        .set({ category: incoming.category })
+        .where(eq(skills.id, row.id));
+    }
+  }
+
   const missing = [...uniqueBySlug.entries()]
     .filter(([slug]) => !idBySlug.has(slug))
-    .map(([slug, value]) => ({ name: value.name, slug }));
+    .map(([slug, value]) => ({
+      name: value.name,
+      slug,
+      category: value.category,
+    }));
 
   if (missing.length > 0) {
     try {

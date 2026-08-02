@@ -28,6 +28,7 @@ import {
   toAiShortlistView,
   type AiShortlistView,
 } from "@/services/ai/view";
+import { listJobShortlistingCriteria } from "@/services/jobs/criteria";
 
 function formatShortlistError(error: unknown): string {
   const raw =
@@ -68,7 +69,7 @@ export async function runAiShortlisting(
     throw applicationNotFoundError();
   }
 
-  const [educationRows, skillRows] = await Promise.all([
+  const [educationRows, skillRows, criteria] = await Promise.all([
     db
       .select({
         institution: applicationEducation.institution,
@@ -82,11 +83,13 @@ export async function runAiShortlisting(
     db
       .select({
         name: skills.name,
+        category: skills.category,
         proficiency: applicationSkills.proficiency,
       })
       .from(applicationSkills)
       .innerJoin(skills, eq(applicationSkills.skillId, skills.id))
       .where(eq(applicationSkills.applicationId, applicationId)),
+    listJobShortlistingCriteria(context.application.jobId),
   ]);
 
   const [pending] = await db
@@ -121,15 +124,35 @@ export async function runAiShortlisting(
             description: context.jobDescription,
             requirements: context.jobRequirements,
           },
+          criteria: criteria.map((item) => ({
+            type: item.type,
+            label: item.label,
+            description: item.description,
+            valueText: item.valueText,
+            valueNumber: item.valueNumber,
+            educationLevel: item.educationLevel,
+            weight: item.weight,
+            isRequired: item.isRequired,
+          })),
           candidate: {
             fullName: context.application.fullName,
             email: context.application.email,
             currentTitle: context.application.currentTitle,
+            currentCompany: context.application.currentCompany,
+            currentLocation: context.application.currentLocation,
             yearsOfExperience: context.application.yearsOfExperience,
+            expectedSalary: context.application.expectedSalary,
+            noticePeriod: context.application.noticePeriod,
+            employmentStatus: context.application.employmentStatus,
+            interestReason: context.application.interestReason,
+            whyConsider: context.application.whyConsider,
+            willingOnsite: context.application.willingOnsite,
+            availableJoinDate: context.application.availableJoinDate,
             workExperience: context.application.workExperience,
             coverLetter: context.application.coverLetter,
             linkedinUrl: context.application.linkedinUrl,
             portfolioUrl: context.application.portfolioUrl,
+            githubUrl: context.application.githubUrl,
             education: educationRows,
             skills: skillRows,
           },

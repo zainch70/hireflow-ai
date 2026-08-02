@@ -12,9 +12,11 @@ import {
   type JobStatus,
 } from "@/constants/job-status";
 import {
+  countApplicationsByJob,
   countApplicationsGroupedByStatus,
   countApplicationsOverTime,
   listRecentApplicationsForHr,
+  type ApplicationsByJobCount,
   type HrApplicationListItem,
 } from "@/services/applications";
 import {
@@ -39,6 +41,7 @@ export type HrDashboardStats = {
   aiScreenedTotal: number;
   jobsByStatus: StatusCount[];
   applicationsByStatus: StatusCount[];
+  applicationsByJob: ApplicationsByJobCount[];
   applicationsOverTime: Array<{ date: string; count: number }>;
   jobsPublishedOverTime: Array<{ date: string; count: number }>;
   aiRecommendations: AiRecommendationCount[];
@@ -54,13 +57,18 @@ export type HrDashboardStats = {
   draftJobs: number;
   closedJobs: number;
   submittedApplications: number;
+  underReviewApplications: number;
   shortlistedApplications: number;
+  interviewApplications: number;
+  rejectedApplications: number;
+  hiredApplications: number;
 };
 
 async function loadHrDashboardStats(): Promise<HrDashboardStats> {
   const [
     jobsByStatusRaw,
     applicationsByStatusRaw,
+    applicationsByJob,
     applicationsOverTime,
     jobsPublishedOverTime,
     aiRecommendations,
@@ -69,6 +77,7 @@ async function loadHrDashboardStats(): Promise<HrDashboardStats> {
   ] = await Promise.all([
     countJobsGroupedByStatus(),
     countApplicationsGroupedByStatus(),
+    countApplicationsByJob(8),
     countApplicationsOverTime(30),
     countJobsPublishedOverTime(30),
     countAiRecommendations(),
@@ -123,6 +132,7 @@ async function loadHrDashboardStats(): Promise<HrDashboardStats> {
     aiScreenedTotal,
     jobsByStatus,
     applicationsByStatus,
+    applicationsByJob,
     applicationsOverTime,
     jobsPublishedOverTime,
     aiRecommendations,
@@ -133,8 +143,16 @@ async function loadHrDashboardStats(): Promise<HrDashboardStats> {
     closedJobs: jobsByStatusMap.get(JOB_STATUS.CLOSED) ?? 0,
     submittedApplications:
       applicationsByStatusMap.get(APPLICATION_STATUS.SUBMITTED) ?? 0,
+    underReviewApplications:
+      applicationsByStatusMap.get(APPLICATION_STATUS.UNDER_REVIEW) ?? 0,
     shortlistedApplications:
       applicationsByStatusMap.get(APPLICATION_STATUS.SHORTLISTED) ?? 0,
+    interviewApplications:
+      applicationsByStatusMap.get(APPLICATION_STATUS.INTERVIEW) ?? 0,
+    rejectedApplications:
+      applicationsByStatusMap.get(APPLICATION_STATUS.REJECTED) ?? 0,
+    hiredApplications:
+      applicationsByStatusMap.get(APPLICATION_STATUS.HIRED) ?? 0,
   };
 }
 
