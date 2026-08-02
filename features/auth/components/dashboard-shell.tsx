@@ -13,7 +13,7 @@ export async function DashboardShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 border-b border-border bg-card/90 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-border bg-card">
         <Container className="flex h-14 items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-4 sm:gap-6">
             <BrandMark href={ROUTES.dashboard.root} />

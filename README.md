@@ -465,18 +465,16 @@ HR `/hr/applications` uses **server-side** filters via URL search params + Drizz
 
 Indexes: `applications(created_at)`, `applications(years_of_experience)`, `ai_analyses(application_id, created_at)`. Apply with `npm run db:migrate` (migration `0005_low_guardsmen`).
 
-### Phase 12 — Analytics
+### Phase 12 — Analytics ✅
 
-Build dashboard analytics with **Recharts**.
+HR `/hr/statistics` Recharts (responsive 2-col grid):
 
-Show:
+- Applications by status
+- Applications over time (30d)
+- AI recommendations (latest completed shortlist band per application)
+- Jobs published (30d via `published_at`)
 
-- Applications by Status
-- Applications over Time
-- AI Recommendations
-- Jobs Published
-
-Responsive. No unnecessary charts. (Basic Statistics charts already exist; extend for AI metrics and polish.)
+Metric strip: Applications, AI screened, Published jobs, Shortlisted. Extra charts removed.
 
 ### Phase 13 — Security Review
 

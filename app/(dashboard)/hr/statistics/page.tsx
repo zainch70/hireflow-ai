@@ -2,16 +2,16 @@ import type { Metadata } from "next";
 
 import { PageHeader } from "@/components/layouts/page-header";
 import {
+  AiRecommendationsChart,
   ApplicationsByStatusChart,
   ApplicationsOverTimeChart,
-  JobsByStatusChart,
-  TopJobsByApplicationsChart,
+  JobsPublishedChart,
 } from "@/features/dashboard/components/stats-charts";
 import { getHrDashboardStats } from "@/services/dashboard";
 
 export const metadata: Metadata = {
   title: "Statistics",
-  description: "Hiring pipeline metrics",
+  description: "Hiring pipeline analytics",
 };
 
 export default async function HrStatisticsPage() {
@@ -21,21 +21,21 @@ export default async function HrStatisticsPage() {
     <div className="space-y-8">
       <PageHeader
         title="Statistics"
-        description="Pipeline volume and trends across jobs and applications."
+        description="Applications, AI shortlisting, and publish activity — focused charts only."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard label="Total jobs" value={stats.jobsTotal} />
-        <MetricCard label="Published" value={stats.publishedJobs} />
         <MetricCard label="Applications" value={stats.applicationsTotal} />
+        <MetricCard label="AI screened" value={stats.aiScreenedTotal} />
+        <MetricCard label="Published jobs" value={stats.publishedJobs} />
         <MetricCard label="Shortlisted" value={stats.shortlistedApplications} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <JobsByStatusChart data={stats.jobsByStatus} />
         <ApplicationsByStatusChart data={stats.applicationsByStatus} />
         <ApplicationsOverTimeChart data={stats.applicationsOverTime} />
-        <TopJobsByApplicationsChart data={stats.topJobsByApplications} />
+        <AiRecommendationsChart data={stats.aiRecommendations} />
+        <JobsPublishedChart data={stats.jobsPublishedOverTime} />
       </div>
     </div>
   );
@@ -45,7 +45,9 @@ function MetricCard({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tracking-tight">{value}</p>
+      <p className="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
+        {value}
+      </p>
     </div>
   );
 }

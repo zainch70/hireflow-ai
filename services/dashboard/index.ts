@@ -1,17 +1,21 @@
-import { JOB_STATUS, type JobStatus } from "@/constants/job-status";
 import {
   APPLICATION_STATUS,
   getApplicationStatusLabel,
 } from "@/constants/application-status";
+import { JOB_STATUS, type JobStatus } from "@/constants/job-status";
 import {
-  countApplicationsByJob,
   countApplicationsGroupedByStatus,
   countApplicationsOverTime,
   listRecentApplicationsForHr,
   type HrApplicationListItem,
 } from "@/services/applications";
 import {
+  countAiRecommendations,
+  type AiRecommendationCount,
+} from "@/services/ai";
+import {
   countJobsGroupedByStatus,
+  countJobsPublishedOverTime,
   listRecentJobs,
   type Job,
 } from "@/services/jobs";
@@ -25,14 +29,12 @@ export type StatusCount = {
 export type HrDashboardStats = {
   jobsTotal: number;
   applicationsTotal: number;
+  aiScreenedTotal: number;
   jobsByStatus: StatusCount[];
   applicationsByStatus: StatusCount[];
   applicationsOverTime: Array<{ date: string; count: number }>;
-  topJobsByApplications: Array<{
-    jobId: string;
-    jobTitle: string;
-    count: number;
-  }>;
+  jobsPublishedOverTime: Array<{ date: string; count: number }>;
+  aiRecommendations: AiRecommendationCount[];
   recentJobs: Job[];
   recentApplications: HrApplicationListItem[];
   publishedJobs: number;
@@ -50,23 +52,21 @@ const JOB_STATUS_LABELS: Record<JobStatus, string> = {
   archived: "Archived",
 };
 
-function labelApplicationStatus(status: string) {
-  return getApplicationStatusLabel(status);
-}
-
 export async function getHrDashboardStats(): Promise<HrDashboardStats> {
   const [
     jobsByStatusRaw,
     applicationsByStatusRaw,
     applicationsOverTime,
-    topJobsByApplications,
+    jobsPublishedOverTime,
+    aiRecommendations,
     recentJobs,
     recentApplications,
   ] = await Promise.all([
     countJobsGroupedByStatus(),
     countApplicationsGroupedByStatus(),
     countApplicationsOverTime(30),
-    countApplicationsByJob(8),
+    countJobsPublishedOverTime(30),
+    countAiRecommendations(),
     listRecentJobs(5),
     listRecentApplicationsForHr(5),
   ]);
@@ -90,7 +90,7 @@ export async function getHrDashboardStats(): Promise<HrDashboardStats> {
     APPLICATION_STATUS,
   ).map((status) => ({
     status,
-    label: labelApplicationStatus(status),
+    label: getApplicationStatusLabel(status),
     count: applicationsByStatusMap.get(status) ?? 0,
   }));
 
@@ -99,14 +99,20 @@ export async function getHrDashboardStats(): Promise<HrDashboardStats> {
     (sum, row) => sum + row.count,
     0,
   );
+  const aiScreenedTotal = aiRecommendations.reduce(
+    (sum, row) => sum + row.count,
+    0,
+  );
 
   return {
     jobsTotal,
     applicationsTotal,
+    aiScreenedTotal,
     jobsByStatus,
     applicationsByStatus,
     applicationsOverTime,
-    topJobsByApplications,
+    jobsPublishedOverTime,
+    aiRecommendations,
     recentJobs,
     recentApplications,
     publishedJobs: jobsByStatusMap.get(JOB_STATUS.PUBLISHED) ?? 0,

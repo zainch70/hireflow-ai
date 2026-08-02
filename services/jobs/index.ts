@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { and, asc, count, desc, eq, ilike, isNotNull, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, isNotNull, or, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { jobs } from "@/db/schema";
@@ -254,6 +254,40 @@ export async function countJobsGroupedByStatus(): Promise<
     status: row.status as JobStatus,
     count: Number(row.count),
   }));
+}
+
+/**
+ * Daily publish events for the last `days` days (jobs with published_at set).
+ * Unpublish clears published_at, so only currently dated publishes appear.
+ */
+export async function countJobsPublishedOverTime(
+  days = 30,
+): Promise<Array<{ date: string; count: number }>> {
+  const since = new Date();
+  since.setHours(0, 0, 0, 0);
+  since.setDate(since.getDate() - (days - 1));
+
+  const rows = await db
+    .select({
+      date: sql<string>`to_char(date_trunc('day', ${jobs.publishedAt}), 'YYYY-MM-DD')`,
+      count: count(),
+    })
+    .from(jobs)
+    .where(and(isNotNull(jobs.publishedAt), gte(jobs.publishedAt, since)))
+    .groupBy(sql`date_trunc('day', ${jobs.publishedAt})`)
+    .orderBy(sql`date_trunc('day', ${jobs.publishedAt})`);
+
+  const byDate = new Map(rows.map((row) => [row.date, Number(row.count)]));
+  const series: Array<{ date: string; count: number }> = [];
+
+  for (let i = 0; i < days; i += 1) {
+    const day = new Date(since);
+    day.setDate(since.getDate() + i);
+    const key = day.toISOString().slice(0, 10);
+    series.push({ date: key, count: byDate.get(key) ?? 0 });
+  }
+
+  return series;
 }
 
 export async function listRecentJobs(limit = 5): Promise<Job[]> {
