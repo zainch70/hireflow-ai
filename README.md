@@ -57,10 +57,13 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run lint` / `lint:fix` | ESLint |
 | `npm run format` / `format:check` | Prettier |
 | `npm run typecheck` | TypeScript (`tsc --noEmit`) |
-| `npm run db:generate` | Generate Drizzle migrations |
-| `npm run db:migrate` | Apply migrations |
-| `npm run db:push` | Push schema to the database |
+| `npm run db:generate` | Generate Drizzle migrations from schema |
+| `npm run db:migrate` | Apply migration SQL files |
+| `npm run db:push` | **Blocked** — exits with an error (do not use) |
 | `npm run db:studio` | Open Drizzle Studio |
+
+> **Do not use `drizzle-kit push`.** It can break or drift the schema. Always change schema in code → `db:generate` → `db:migrate`.  
+> Both `npm run db:push` and `npx drizzle-kit push` are blocked (bin wrapper installed on `postinstall`).
 
 ## Architecture
 

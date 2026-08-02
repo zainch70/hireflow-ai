@@ -13,8 +13,9 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:push": "node scripts/block-drizzle-push.mjs",
+    "db:studio": "drizzle-kit studio",
+    "postinstall": "node scripts/install-drizzle-kit-wrapper.mjs"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.31",
