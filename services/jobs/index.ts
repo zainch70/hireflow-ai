@@ -5,6 +5,11 @@ import { db } from "@/db";
 import { jobs } from "@/db/schema";
 import { JOB_STATUS, type JobStatus } from "@/constants/job-status";
 import type { EmploymentType } from "@/constants/employment-type";
+import {
+  fillDailyCounts,
+  sanitizeLikeTerm,
+  startOfLocalDayWindow,
+} from "@/lib/db/query-helpers";
 import type { JobFormInput } from "@/schemas/jobs";
 import { createUniqueJobSlug } from "@/utils/slug";
 import {
@@ -96,12 +101,7 @@ function toJobValues(input: JobFormInput) {
 }
 
 function sanitizeSearchTerm(value: string | undefined): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-
-  const cleaned = value.trim().slice(0, 100).replace(/[%_]/g, " ");
-  return cleaned.length > 0 ? cleaned : undefined;
+  return sanitizeLikeTerm(value);
 }
 
 export async function listJobs(): Promise<Job[]> {
@@ -230,15 +230,6 @@ export async function closeJob(jobId: string): Promise<Job> {
   });
 }
 
-export async function countJobsByStatus(status: JobStatus): Promise<number> {
-  const [row] = await db
-    .select({ value: count() })
-    .from(jobs)
-    .where(eq(jobs.status, status));
-
-  return Number(row?.value ?? 0);
-}
-
 export async function countJobsGroupedByStatus(): Promise<
   Array<{ status: JobStatus; count: number }>
 > {
@@ -263,9 +254,7 @@ export async function countJobsGroupedByStatus(): Promise<
 export async function countJobsPublishedOverTime(
   days = 30,
 ): Promise<Array<{ date: string; count: number }>> {
-  const since = new Date();
-  since.setHours(0, 0, 0, 0);
-  since.setDate(since.getDate() - (days - 1));
+  const since = startOfLocalDayWindow(days);
 
   const rows = await db
     .select({
@@ -278,28 +267,11 @@ export async function countJobsPublishedOverTime(
     .orderBy(sql`date_trunc('day', ${jobs.publishedAt})`);
 
   const byDate = new Map(rows.map((row) => [row.date, Number(row.count)]));
-  const series: Array<{ date: string; count: number }> = [];
-
-  for (let i = 0; i < days; i += 1) {
-    const day = new Date(since);
-    day.setDate(since.getDate() + i);
-    const key = day.toISOString().slice(0, 10);
-    series.push({ date: key, count: byDate.get(key) ?? 0 });
-  }
-
-  return series;
+  return fillDailyCounts(since, days, byDate);
 }
 
 export async function listRecentJobs(limit = 5): Promise<Job[]> {
   return db.select().from(jobs).orderBy(desc(jobs.updatedAt)).limit(limit);
-}
-
-export async function listJobsByStatus(status: JobStatus): Promise<Job[]> {
-  return db
-    .select()
-    .from(jobs)
-    .where(and(eq(jobs.status, status)))
-    .orderBy(desc(jobs.updatedAt));
 }
 
 /** Public careers listing — published jobs only, card columns only. */

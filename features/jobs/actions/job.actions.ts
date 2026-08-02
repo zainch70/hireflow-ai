@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { ROUTES } from "@/constants/routes";
 import { requireHrProfile } from "@/lib/auth";
-import { isAppError, toErrorMessage } from "@/lib/errors";
+import { toErrorMessage } from "@/lib/errors";
 import { jobFormSchema, jobIdSchema } from "@/schemas/jobs";
 import {
   closeJob,
@@ -72,7 +72,7 @@ export async function updateJobAction(
     return {};
   } catch (error) {
     return {
-      error: isAppError(error) ? error.message : toErrorMessage(error),
+      error: toErrorMessage(error),
     };
   }
 }
@@ -91,7 +91,7 @@ export async function deleteJobAction(jobId: string): Promise<JobActionResult> {
     return {};
   } catch (error) {
     return {
-      error: isAppError(error) ? error.message : toErrorMessage(error),
+      error: toErrorMessage(error),
     };
   }
 }
@@ -112,7 +112,7 @@ export async function publishJobAction(
     return {};
   } catch (error) {
     return {
-      error: isAppError(error) ? error.message : toErrorMessage(error),
+      error: toErrorMessage(error),
     };
   }
 }
@@ -133,7 +133,7 @@ export async function unpublishJobAction(
     return {};
   } catch (error) {
     return {
-      error: isAppError(error) ? error.message : toErrorMessage(error),
+      error: toErrorMessage(error),
     };
   }
 }
@@ -152,7 +152,7 @@ export async function closeJobAction(jobId: string): Promise<JobActionResult> {
     return {};
   } catch (error) {
     return {
-      error: isAppError(error) ? error.message : toErrorMessage(error),
+      error: toErrorMessage(error),
     };
   }
 }

@@ -7,3 +7,4 @@ export { InlineAlert } from "./inline-alert";
 export { AuthCentered } from "./auth-centered";
 export { ButtonLink } from "./button-link";
 export { RouteMessage } from "./route-message";
+export { MetricCard } from "./metric-card";

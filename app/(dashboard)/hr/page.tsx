@@ -4,6 +4,7 @@ import { BriefcaseBusiness, Inbox, LayoutDashboard } from "lucide-react";
 import { EmptyState } from "@/components/layouts/empty-state";
 import { PageHeader } from "@/components/layouts/page-header";
 import { ButtonLink } from "@/components/layouts/button-link";
+import { MetricCard } from "@/components/layouts/metric-card";
 import { SurfaceCard } from "@/components/layouts/surface-card";
 import { ROUTES, hrApplicationPath } from "@/constants/routes";
 import { getJobStatusLabel } from "@/features/jobs/lib/job-labels";
@@ -31,12 +32,12 @@ export default async function HrHomePage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <StatCard label="Published jobs" value={stats.publishedJobs} />
-        <StatCard label="Drafts" value={stats.draftJobs} />
-        <StatCard label="Closed" value={stats.closedJobs} />
-        <StatCard label="Applications" value={stats.applicationsTotal} />
-        <StatCard label="Submitted" value={stats.submittedApplications} />
-        <StatCard label="Shortlisted" value={stats.shortlistedApplications} />
+        <MetricCard label="Published jobs" value={stats.publishedJobs} />
+        <MetricCard label="Drafts" value={stats.draftJobs} />
+        <MetricCard label="Closed" value={stats.closedJobs} />
+        <MetricCard label="Applications" value={stats.applicationsTotal} />
+        <MetricCard label="Submitted" value={stats.submittedApplications} />
+        <MetricCard label="Shortlisted" value={stats.shortlistedApplications} />
       </div>
 
       {stats.jobsTotal === 0 && stats.applicationsTotal === 0 ? (
@@ -142,15 +143,6 @@ export default async function HrHomePage() {
           </SurfaceCard>
         </div>
       )}
-    </div>
-  );
-}
-
-function StatCard({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tracking-tight">{value}</p>
     </div>
   );
 }

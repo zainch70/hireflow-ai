@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { ROUTES, hrApplicationPath } from "@/constants/routes";
 import { requireHrProfile } from "@/lib/auth";
-import { isAppError, toErrorMessage } from "@/lib/errors";
+import { toErrorMessage } from "@/lib/errors";
 import { applicationIdSchema } from "@/schemas/applications";
 import { runAiShortlisting } from "@/services/ai";
 
@@ -32,7 +32,7 @@ export async function runAiShortlistingAction(
     return { analysisId: analysis.id };
   } catch (error) {
     return {
-      error: isAppError(error) ? error.message : toErrorMessage(error),
+      error: toErrorMessage(error),
     };
   }
 }

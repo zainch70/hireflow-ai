@@ -4,16 +4,10 @@ import {
   type EmploymentType,
 } from "@/constants/employment-type";
 
-export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
-  draft: "Draft",
-  published: "Published",
-  closed: "Closed",
-  archived: "Archived",
-};
-
-export function getJobStatusLabel(status: JobStatus): string {
-  return JOB_STATUS_LABELS[status];
-}
+export {
+  JOB_STATUS_LABELS,
+  getJobStatusLabel,
+} from "@/constants/job-status";
 
 export function getEmploymentTypeLabel(type: EmploymentType): string {
   return EMPLOYMENT_TYPE_LABELS[type];

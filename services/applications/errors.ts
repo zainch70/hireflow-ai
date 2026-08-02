@@ -1,8 +1,7 @@
 import { AppError } from "@/lib/errors/app-error";
+import type { ActionResult } from "@/lib/errors/action-result";
 
-export type ApplicationActionResult = {
-  error?: string;
-  fieldErrors?: Record<string, string[] | undefined>;
+export type ApplicationActionResult = ActionResult & {
   applicationId?: string;
 };
 

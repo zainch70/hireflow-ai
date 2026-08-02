@@ -1,6 +1,5 @@
 import { Badge } from "@/components/ui/badge";
 import type { JobStatus } from "@/constants/job-status";
-import { JOB_STATUS } from "@/constants/job-status";
 import { getJobStatusLabel } from "@/features/jobs/lib/job-labels";
 import { cn } from "@/lib/utils";
 
@@ -20,8 +19,4 @@ export function JobStatusBadge({ status }: { status: JobStatus }) {
       {getJobStatusLabel(status)}
     </Badge>
   );
-}
-
-export function isPublishedStatus(status: JobStatus) {
-  return status === JOB_STATUS.PUBLISHED;
 }

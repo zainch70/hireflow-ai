@@ -2,7 +2,7 @@
 
 AI-powered careers and recruitment portal. Candidates browse and apply to jobs; HR manages openings, applications, and AI-assisted screening.
 
-> **Status:** Foundation, database schema, **HR authentication**, **HR Dashboard**, **Candidate management**, **AI shortlisting** (Gemini structured JSON), **Job Opening Management**, **public Careers**, **Candidate Applications**, **secure PDF resume upload**, and **PDF text extraction** are in place.
+> **Status:** Careers portal, HR auth, jobs, applications (server-side filters), candidate review, AI shortlisting (Gemini + model/key fallback), analytics (Recharts), PDF resume upload/extraction, and a refactored service layer are in place. Deployment + a fuller README polish remain.
 
 ## Tech stack
 
@@ -146,9 +146,9 @@ npm run dev
 | [http://localhost:3000/login](http://localhost:3000/login) | HR sign in |
 | [http://localhost:3000/hr](http://localhost:3000/hr) | HR overview (KPIs + recent activity) |
 | [http://localhost:3000/hr/jobs](http://localhost:3000/hr/jobs) | Jobs table (search / filter / sort / pagination) |
-| [http://localhost:3000/hr/applications](http://localhost:3000/hr/applications) | Applications table + signed resume links |
-| [http://localhost:3000/hr/applications/[id]](http://localhost:3000/hr/applications) | Candidate review (status, history, notes) |
-| [http://localhost:3000/hr/statistics](http://localhost:3000/hr/statistics) | Pipeline charts (Recharts) |
+| [http://localhost:3000/hr/applications](http://localhost:3000/hr/applications) | Applications (server filters + pagination) |
+| [http://localhost:3000/hr/applications/[id]](http://localhost:3000/hr/applications) | Candidate review (status, notes, AI shortlist) |
+| [http://localhost:3000/hr/statistics](http://localhost:3000/hr/statistics) | Analytics charts (Recharts) |
 
 ## Authentication (for team members)
 
@@ -183,21 +183,23 @@ middleware.ts            # Session refresh + /hr guard
 
 ### What exists
 
-- Top-nav dashboard shell: Overview · Jobs · Applications · Statistics (active link highlight)
+- Top-nav dashboard shell: Overview · Jobs · Applications · Statistics
 - **Overview** — job/application KPIs + recent lists
-- **Jobs / Applications** — TanStack Table with search, status filters, sorting, pagination (responsive cards on mobile)
-- **Statistics** — Recharts: jobs/applications by status, submissions over time, top jobs by volume
-- Aggregations via `services/dashboard` (SQL `count` / `groupBy`) — no AI
+- **Jobs** — TanStack Table (client search / filter / sort / pagination)
+- **Applications** — **server-side** filters (name, email, job, status, AI score, experience, date) + pagination; see Phase 11
+- **Statistics** — Recharts only: applications by status, applications over time (30d), AI recommendations, jobs published (30d)
+- Aggregations via `services/dashboard`
 
 ### Key files
 
 ```
-app/(dashboard)/hr/              # Overview, jobs, applications, statistics pages
+app/(dashboard)/hr/              # Overview, jobs, applications, statistics
 features/auth/dashboard-nav.tsx  # Active nav links
 features/jobs/                   # Jobs TanStack table + CRUD actions
-features/applications/           # Applications table, review UI, resume download
+features/applications/           # Applications filters/table, review UI, AI panel
 features/dashboard/              # Recharts chart components
-components/data-table/           # Shared TanStack toolbar / pagination / headers
+components/data-table/           # Shared TanStack primitives
+components/layouts/metric-card.tsx
 services/dashboard/              # getHrDashboardStats
 ```
 
@@ -247,7 +249,8 @@ db/schema/application-status-history.ts
 
 - HR runs / reruns Gemini shortlisting on `/hr/applications/[id]`
 - Inputs: job requirements + description, application form, extracted `resume_text`
-- Structured JSON via Vercel AI SDK `generateObject` + Zod
+- Recruiter-style prompt (`shortlist-v2`) — evidence-grounded, not keyword-only
+- Structured JSON via `generateObject` + Zod + **model/key fallback** on quota errors
 - Stored in `ai_analyses` (score, summary, strengths, concerns, skill matches, raw JSON)
 - UI: match score, recommendation, matching/missing skills, strengths, concerns, summary
 
@@ -272,7 +275,9 @@ db/schema/application-status-history.ts
 ```
 lib/ai/shortlist-schema.ts
 lib/ai/shortlist-prompt.ts
-services/ai/index.ts
+lib/ai/generate-with-fallback.ts
+lib/ai/client.ts                 # keys + model rotation helpers
+services/ai/                     # view / shortlist / stats (+ barrel)
 features/applications/actions/ai.actions.ts
 features/applications/components/ai-shortlist-panel.tsx
 db/schema/ai-analyses.ts
@@ -318,6 +323,26 @@ app/(dashboard)/hr/jobs/ # List / create / edit pages
 ```
 features/careers/        # Cards, filters, public shell, apply CTA
 app/(public)/careers/    # List + detail + apply routes
+```
+
+## Applications list filters (for team members)
+
+HR `/hr/applications` filters on the **server** via URL search params:
+
+| Filter | Notes |
+| --- | --- |
+| Name / email | `ilike` (wildcards sanitized) |
+| Job / status | Exact match |
+| AI score min/max | Latest completed `ai_analyses.overall_score` |
+| Experience min/max | `years_of_experience` |
+| Submitted from/to | `created_at` date range |
+
+Paginated (default 20/page). Indexes: `applications(created_at)`, `applications(years_of_experience)`, `ai_analyses(application_id, created_at)` — migration `0005_low_guardsmen`.
+
+```
+features/applications/components/applications-filters.tsx
+features/applications/lib/applications-filters.ts
+services/applications/list.ts
 ```
 
 ## Candidate Applications (for team members)
@@ -377,13 +402,14 @@ Update resume_path + resume_file_name + resume_text
 ### Key files
 
 ```
-features/applications/   # Form, resume download, server actions
-services/applications/   # Submit + HR list + signed URL orchestration
-services/storage/        # Private bucket upload / signed URLs
-lib/uploads/             # PDF meta + magic-byte validation
-lib/pdf/                 # pdf-parse + OCR fallback
-lib/ai/ocr-resume.ts     # Gemini vision OCR for scanned pages
-schemas/applications.ts  # Zod schema
+features/applications/           # Form, filters, table, review, AI panel, actions
+services/applications/           # submit / list / detail / skills (+ barrel)
+services/storage/                # Private bucket upload / signed URLs
+lib/uploads/                     # PDF meta + magic-byte validation
+lib/pdf/                         # pdf-parse + OCR fallback
+lib/ai/ocr-resume.ts             # Gemini vision OCR for scanned pages
+lib/db/query-helpers.ts          # Shared LIKE / date-series helpers
+schemas/applications.ts          # Zod form + HR filter search params
 ```
 
 ## Scripts
@@ -407,14 +433,14 @@ Feature-based layout with clear separation of concerns:
 
 ```
 app/           # Routes & layouts (public + dashboard groups)
-components/    # Shared UI (shadcn in ui/)
-features/      # Domain modules (auth, jobs, careers, applications)
-services/      # Business orchestration
+components/    # Shared UI (shadcn in ui/, layouts, data-table)
+features/      # Domain UI + Server Actions (auth, jobs, careers, applications, dashboard)
+services/      # Business orchestration (split by concern; barrels re-export)
 db/            # Drizzle client, schema, migrations
-lib/           # Infrastructure (supabase, ai, auth, errors, uploads)
+lib/           # Infrastructure (supabase, ai, auth, errors, uploads, pdf, db helpers)
 schemas/       # Zod validation
 providers/     # Theme, Supabase, toasts
-constants/     # Routes, roles, statuses
+constants/     # Routes, roles, statuses, labels
 types/         # Shared TypeScript types
 ```
 
@@ -435,77 +461,32 @@ Already configured:
 
 - Next.js App Router + TypeScript + Tailwind + shadcn/ui
 - Supabase clients (browser, server, middleware, admin)
-- Drizzle schema + applied migrations
+- Drizzle schema + applied migrations (including filter indexes)
 - HR authentication (login, logout, middleware, role checks)
 - HR Dashboard (Overview, Jobs, Applications, Statistics)
+- Server-side application filters + pagination
 - Candidate management (status transitions, history, notes)
-- AI shortlisting (Gemini structured JSON → `ai_analyses`)
+- AI shortlisting (recruiter prompt, structured JSON, model/key fallback)
+- Analytics charts (status, time series, AI recommendations, jobs published)
 - Job Opening Management (CRUD + publish / unpublish / close)
 - Public Careers pages (published list, detail, search/filter)
 - Candidate applications (form + private PDF resume upload + text extraction)
-- HR applications list with TanStack Table + signed resume links
 - Providers (theme, Supabase, toasts)
-- Error / API response helpers
+- AppError + Server Action result helpers
 - Upload validation (PDF type/size/magic bytes)
 - PDF text extraction via pdf-parse + Gemini OCR fallback (`resume_text`)
-- Gemini client factory + resume OCR prompt (`lib/ai/ocr-resume.ts`)
-- Shared DataTable primitives + Recharts stats
+- Shared DataTable primitives, MetricCard, query helpers
 - Routes, roles, and status constants
+- Refactored `services/applications` and `services/ai` modules
 
 ## Pending work
 
-### Phase 11 — Search & Filters ✅
+### Phases 11–14 ✅
 
-HR `/hr/applications` uses **server-side** filters via URL search params + Drizzle:
-
-- Name, email (`ilike`), job, status
-- AI score min/max (latest completed `ai_analyses.overall_score`)
-- Experience min/max, submitted date range
-- Paginated results (default 20/page)
-
-Indexes: `applications(created_at)`, `applications(years_of_experience)`, `ai_analyses(application_id, created_at)`. Apply with `npm run db:migrate` (migration `0005_low_guardsmen`).
-
-### Phase 12 — Analytics ✅
-
-HR `/hr/statistics` Recharts (responsive 2-col grid):
-
-- Applications by status
-- Applications over time (30d)
-- AI recommendations (latest completed shortlist band per application)
-- Jobs published (30d via `published_at`)
-
-Metric strip: Applications, AI screened, Published jobs, Shortlisted. Extra charts removed.
-
-### Phase 13 — Security Review
-
-Review the project for security.
-
-Check:
-
-- Authentication
-- Authorization
-- Supabase RLS
-- Storage Security
-- Input Validation
-- API Security
-- Environment Variables
-- Rate Limiting suggestions
-
-Deliverable: list of improvements (do not silently change production behavior without a checklist).
-
-### Phase 14 — Refactoring
-
-Refactor the project.
-
-Goals:
-
-- Reduce duplication
-- Improve naming
-- Improve folder structure
-- Improve readability
-- Apply SOLID where practical
-
-**No feature changes.**
+- **Filters** — see [Applications list filters](#applications-list-filters-for-team-members)
+- **Analytics** — `/hr/statistics`: applications by status, over time (30d), AI recommendations, jobs published (30d)
+- **Security review** — P0 before production: never trust `user_metadata.role` for HR; enable RLS / lock Data API; verify private `resumes` bucket. P1: JSON-LD XSS, rate limits, http(s)-only URLs, sanitize client errors
+- **Refactor** — split application/AI services; shared query helpers, MetricCard, action result helpers
 
 ### Phase 15 — Deployment
 
@@ -521,26 +502,13 @@ Configure:
 - Known Issues
 - Optimization Suggestions
 
-### Phase 16 — README
+Address **security P0** items before go-live (RLS / Auth signup policy / private `resumes` bucket).
 
-Write a professional README.
+### Phase 16 — README polish (optional)
 
-Include:
+This file is kept current with features. A final editorial pass can still add: deployment checklist, known limitations, and a single end-to-end “how to demo” walkthrough.
 
-- Project Overview
-- Architecture
-- Tech Stack
-- Folder Structure
-- Database
-- Authentication
-- AI Workflow
-- How to Run
-- Environment Variables
-- Deployment
-- Future Improvements
-- Known Limitations
-
-> **Also still pending (earlier product work):** richer AI criteria / auto-status updates from recommendations (optional).
+> **Also still pending (product):** richer AI criteria / auto-status updates from recommendations (optional).
 
 ## License
 

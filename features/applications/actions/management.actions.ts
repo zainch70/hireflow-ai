@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { ROUTES, hrApplicationPath } from "@/constants/routes";
 import { requireHrProfile } from "@/lib/auth";
-import { isAppError, toErrorMessage } from "@/lib/errors";
+import { toErrorMessage } from "@/lib/errors";
 import {
   addApplicationNoteSchema,
   updateApplicationStatusSchema,
@@ -45,7 +45,7 @@ export async function updateApplicationStatusAction(
     return { applicationId: parsed.data.applicationId };
   } catch (error) {
     return {
-      error: isAppError(error) ? error.message : toErrorMessage(error),
+      error: toErrorMessage(error),
     };
   }
 }
@@ -72,7 +72,7 @@ export async function addApplicationNoteAction(
     return { applicationId: parsed.data.applicationId };
   } catch (error) {
     return {
-      error: isAppError(error) ? error.message : toErrorMessage(error),
+      error: toErrorMessage(error),
     };
   }
 }

@@ -1,30 +1,9 @@
 import { AppError } from "@/lib/errors/app-error";
+import type { ActionResult } from "@/lib/errors/action-result";
 import type { JobStatus } from "@/constants/job-status";
 import { JOB_STATUS } from "@/constants/job-status";
 
-export type JobActionResult = {
-  error?: string;
-  fieldErrors?: Record<string, string[] | undefined>;
-};
-
-export function toFieldErrors(
-  error: unknown,
-): Record<string, string[] | undefined> | undefined {
-  if (
-    error &&
-    typeof error === "object" &&
-    "flatten" in error &&
-    typeof (error as { flatten: () => unknown }).flatten === "function"
-  ) {
-    return (
-      error as {
-        flatten: () => { fieldErrors: Record<string, string[] | undefined> };
-      }
-    ).flatten().fieldErrors;
-  }
-
-  return undefined;
-}
+export type JobActionResult = ActionResult;
 
 export function jobNotFoundError() {
   return new AppError("Job not found", {

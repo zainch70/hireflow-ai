@@ -2,7 +2,11 @@ import {
   APPLICATION_STATUS,
   getApplicationStatusLabel,
 } from "@/constants/application-status";
-import { JOB_STATUS, type JobStatus } from "@/constants/job-status";
+import {
+  JOB_STATUS,
+  JOB_STATUS_LABELS,
+  type JobStatus,
+} from "@/constants/job-status";
 import {
   countApplicationsGroupedByStatus,
   countApplicationsOverTime,
@@ -42,14 +46,6 @@ export type HrDashboardStats = {
   closedJobs: number;
   submittedApplications: number;
   shortlistedApplications: number;
-  rejectedApplications: number;
-};
-
-const JOB_STATUS_LABELS: Record<JobStatus, string> = {
-  draft: "Draft",
-  published: "Published",
-  closed: "Closed",
-  archived: "Archived",
 };
 
 export async function getHrDashboardStats(): Promise<HrDashboardStats> {
@@ -122,7 +118,5 @@ export async function getHrDashboardStats(): Promise<HrDashboardStats> {
       applicationsByStatusMap.get(APPLICATION_STATUS.SUBMITTED) ?? 0,
     shortlistedApplications:
       applicationsByStatusMap.get(APPLICATION_STATUS.SHORTLISTED) ?? 0,
-    rejectedApplications:
-      applicationsByStatusMap.get(APPLICATION_STATUS.REJECTED) ?? 0,
   };
 }

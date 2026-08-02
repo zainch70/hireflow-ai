@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { MetricCard } from "@/components/layouts/metric-card";
 import { PageHeader } from "@/components/layouts/page-header";
 import {
   AiRecommendationsChart,
@@ -37,17 +38,6 @@ export default async function HrStatisticsPage() {
         <AiRecommendationsChart data={stats.aiRecommendations} />
         <JobsPublishedChart data={stats.jobsPublishedOverTime} />
       </div>
-    </div>
-  );
-}
-
-function MetricCard({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
-        {value}
-      </p>
     </div>
   );
 }

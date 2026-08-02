@@ -1,7 +1,7 @@
 "use server";
 
 import { requireHrProfile } from "@/lib/auth";
-import { isAppError, toErrorMessage } from "@/lib/errors";
+import { toErrorMessage } from "@/lib/errors";
 import { getApplicationResumeDownloadUrl } from "@/services/applications";
 
 export type ResumeUrlActionResult = {
@@ -28,7 +28,7 @@ export async function getApplicationResumeUrlAction(
     };
   } catch (error) {
     return {
-      error: isAppError(error) ? error.message : toErrorMessage(error),
+      error: toErrorMessage(error),
     };
   }
 }
