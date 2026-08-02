@@ -2,7 +2,7 @@
 
 AI-powered careers and recruitment portal. Candidates browse and apply to jobs; HR manages openings, applications, and AI-assisted screening.
 
-> **Status:** Foundation, database schema, **HR authentication**, **Job Opening Management**, and **public Careers** (published jobs list + detail) are in place. Candidate applications and AI flows are not built yet.
+> **Status:** Foundation, database schema, **HR authentication**, **Job Opening Management**, **public Careers**, and **Candidate Applications** (no CV upload yet) are in place. AI flows are not built yet.
 
 ## Tech stack
 
@@ -209,14 +209,41 @@ app/(dashboard)/hr/jobs/ # List / create / edit pages
 
 - `/careers` lists **published** jobs only (search + filters)
 - `/careers/[slug]` job detail with SEO metadata + JobPosting JSON-LD
-- Apply button present (toast placeholder — no application form yet)
+- Apply CTA → `/careers/[slug]/apply` application form
 
 ### Key files
 
 ```
 features/careers/        # Cards, filters, public shell, apply CTA
-app/(public)/careers/    # List + detail routes
-```## Scripts
+app/(public)/careers/    # List + detail + apply routes
+```
+
+## Candidate Applications (for team members)
+
+### What exists
+
+- Public apply form: personal, professional, education (multi), skills, experience, additional notes
+- Zod + React Hook Form + Server Action
+- Persists to `applications`, `application_education`, `application_skills` (skills catalog upsert)
+- Duplicate apply blocked per job + email
+- **No CV upload yet**
+
+### How to test
+
+1. Publish a job in HR
+2. Open `/careers/[slug]` → **Apply for this role**
+3. Submit the form → success page
+4. Confirm row in Supabase `applications` (+ education/skills)
+
+### Key files
+
+```
+features/applications/   # Form + server action
+services/applications/   # Submit transaction
+schemas/applications.ts  # Zod schema
+```
+
+## Scripts
 
 | Command | Description |
 | --- | --- |
@@ -238,7 +265,7 @@ Feature-based layout with clear separation of concerns:
 ```
 app/           # Routes & layouts (public + dashboard groups)
 components/    # Shared UI (shadcn in ui/)
-features/      # Domain modules (auth, jobs, careers; later applications)
+features/      # Domain modules (auth, jobs, careers, applications)
 services/      # Business orchestration
 db/            # Drizzle client, schema, migrations
 lib/           # Infrastructure (supabase, ai, auth, errors, uploads)
@@ -246,7 +273,9 @@ schemas/       # Zod validation
 providers/     # Theme, Supabase, toasts
 constants/     # Routes, roles, statuses
 types/         # Shared TypeScript types
-```### Next.js conventions (follow these)
+```
+
+### Next.js conventions (follow these)
 
 - **Server Components by default**; Client Components only for interactivity
 - **Server Actions** for mutations (`features/*/actions`)
@@ -267,6 +296,7 @@ Already configured:
 - HR authentication (login, logout, middleware, role checks)
 - Job Opening Management (CRUD + publish / unpublish / close)
 - Public Careers pages (published list, detail, search/filter)
+- Candidate applications (form + DB persist; no CV upload)
 - Providers (theme, Supabase, toasts)
 - Error / API response helpers
 - Upload validation stubs (PDF)
@@ -275,8 +305,11 @@ Already configured:
 
 ## Planned next phases
 
-1. Candidate applications + PDF upload
-2. AI screening / shortlisting
-3. RLS policies on Supabase tables## License
+1. CV / resume upload on applications
+2. HR applications inbox + review
+3. AI screening / shortlisting
+4. RLS policies on Supabase tables
+
+## License
 
 Private — all rights reserved.

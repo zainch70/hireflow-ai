@@ -125,9 +125,9 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
               </header>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <ApplyButton jobTitle={job.title} />
+                <ApplyButton jobSlug={job.slug} />
                 <p className="text-sm text-muted-foreground">
-                  Application form coming soon — you can still review the role.
+                  Takes a few minutes — CV upload comes later.
                 </p>
               </div>
             </div>
@@ -173,11 +173,11 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
                 Ready to apply?
               </h2>
               <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                We’re putting the finishing touches on applications. Use Apply to
-                stay ready — the form ships next.
+                Share your background, education, and skills. CV upload will be
+                available in a later update.
               </p>
               <div className="mt-5">
-                <ApplyButton jobTitle={job.title} />
+                <ApplyButton jobSlug={job.slug} />
               </div>
             </section>
           </div>

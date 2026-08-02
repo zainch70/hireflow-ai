@@ -15,6 +15,13 @@
       "when": 1785660278247,
       "tag": "0001_wet_sleepwalker",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785662180863,
+      "tag": "0002_far_the_liberteens",
+      "breakpoints": true
     }
   ]
 }

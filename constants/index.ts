@@ -10,3 +10,8 @@ export {
   EMPLOYMENT_TYPE_LABELS,
   type EmploymentType,
 } from "./employment-type";
+export {
+  EDUCATION_LEVELS,
+  EDUCATION_LEVEL_LABELS,
+  type EducationLevel,
+} from "./education-level";

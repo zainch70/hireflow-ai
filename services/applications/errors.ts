@@ -1,0 +1,39 @@
+import { AppError } from "@/lib/errors/app-error";
+
+export type ApplicationActionResult = {
+  error?: string;
+  fieldErrors?: Record<string, string[] | undefined>;
+  applicationId?: string;
+};
+
+export function applicationNotAllowedError() {
+  return new AppError("This role is not open for applications", {
+    code: "APPLICATION_NOT_ALLOWED",
+    statusCode: 400,
+  });
+}
+
+export function duplicateApplicationError() {
+  return new AppError("You have already applied to this role with this email", {
+    code: "DUPLICATE_APPLICATION",
+    statusCode: 409,
+  });
+}
+
+export function isUniqueViolation(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const code =
+    "code" in error
+      ? String((error as { code?: unknown }).code)
+      : "cause" in error &&
+          error.cause &&
+          typeof error.cause === "object" &&
+          "code" in error.cause
+        ? String((error.cause as { code?: unknown }).code)
+        : undefined;
+
+  return code === "23505";
+}

@@ -302,6 +302,25 @@ export const getPublishedJobBySlug = cache(
   },
 );
 
+/** Any-status lookup (e.g. apply success after a role closes). */
+export const getJobBySlug = cache(
+  async (
+    slug: string,
+  ): Promise<Pick<PublishedJobDetail, "id" | "slug" | "title"> | null> => {
+    const [job] = await db
+      .select({
+        id: jobs.id,
+        slug: jobs.slug,
+        title: jobs.title,
+      })
+      .from(jobs)
+      .where(eq(jobs.slug, slug))
+      .limit(1);
+
+    return job ?? null;
+  },
+);
+
 export async function getPublishedJobFilterOptions(): Promise<{
   departments: string[];
   locations: string[];

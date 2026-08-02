@@ -37,6 +37,8 @@ export const applications = pgTable(
     portfolioUrl: text("portfolio_url"),
     currentTitle: text("current_title"),
     yearsOfExperience: integer("years_of_experience"),
+    /** Free-text professional experience narrative (no structured work-history table yet). */
+    workExperience: text("work_experience"),
     status: applicationStatusEnum("status").notNull().default("submitted"),
     source: text("source").default("careers_portal"),
     ...timestamps,

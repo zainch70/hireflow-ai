@@ -1,28 +1,20 @@
-"use client";
-
-import { toast } from "sonner";
-
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/layouts/button-link";
+import { careersApplyPath } from "@/constants/routes";
 
 type ApplyButtonProps = {
-  jobTitle: string;
+  jobSlug: string;
   className?: string;
 };
 
-/** Apply CTA — application form ships in a later phase. */
-export function ApplyButton({ jobTitle, className }: ApplyButtonProps) {
+/** Links to the public application form for a published role. */
+export function ApplyButton({ jobSlug, className }: ApplyButtonProps) {
   return (
-    <Button
-      type="button"
+    <ButtonLink
+      href={careersApplyPath(jobSlug)}
       size="lg"
       className={className}
-      onClick={() =>
-        toast.message("Applications coming soon", {
-          description: `The form for ${jobTitle} isn’t open yet. Check back shortly.`,
-        })
-      }
     >
       Apply for this role
-    </Button>
+    </ButtonLink>
   );
 }
