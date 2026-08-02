@@ -17,7 +17,8 @@ function createDb() {
   }
 
   // prepare: false is recommended for Supabase connection pooling
-  const client = postgres(connectionString, { prepare: false });
+  // max: 1 avoids exhausting Session pooler during Next build / serverless
+  const client = postgres(connectionString, { prepare: false, max: 1 });
 
   return drizzle(client, { schema });
 }
