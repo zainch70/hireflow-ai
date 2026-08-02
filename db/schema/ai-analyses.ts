@@ -49,5 +49,10 @@ export const aiAnalyses = pgTable(
   (table) => [
     index("ai_analyses_application_idx").on(table.applicationId),
     index("ai_analyses_status_idx").on(table.status),
+    /** Speeds latest-score lookup: ORDER BY created_at DESC per application. */
+    index("ai_analyses_app_created_idx").on(
+      table.applicationId,
+      table.createdAt,
+    ),
   ],
 );

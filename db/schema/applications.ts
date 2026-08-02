@@ -50,6 +50,8 @@ export const applications = pgTable(
     index("applications_candidate_idx").on(table.candidateId),
     index("applications_status_idx").on(table.status),
     index("applications_email_idx").on(table.email),
+    index("applications_created_at_idx").on(table.createdAt),
+    index("applications_years_experience_idx").on(table.yearsOfExperience),
     uniqueIndex("applications_job_email_uidx").on(table.jobId, table.email),
   ],
 );

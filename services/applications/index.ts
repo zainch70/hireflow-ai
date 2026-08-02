@@ -1,7 +1,8 @@
-import { asc, count, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, inArray, lte, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
+  aiAnalyses,
   applicationEducation,
   applicationNotes,
   applicationSkills,
@@ -15,7 +16,11 @@ import {
   APPLICATION_STATUS,
   type ApplicationStatus,
 } from "@/constants/application-status";
-import type { ApplicationFormInput } from "@/schemas/applications";
+import type {
+  ApplicationFormInput,
+  HrApplicationsSearchParams,
+  HrApplicationsSortField,
+} from "@/schemas/applications";
 import {
   getPublishedJobBySlug,
   type PublishedJobDetail,
@@ -52,6 +57,8 @@ export type HrApplicationListItem = {
   status: Application["status"];
   resumePath: string | null;
   resumeFileName: string | null;
+  yearsOfExperience: number | null;
+  aiScore: number | null;
   createdAt: Date;
   jobTitle: string;
   jobSlug: string;
@@ -66,10 +73,30 @@ export type HrApplicationTableRow = {
   status: Application["status"];
   resumePath: string | null;
   resumeFileName: string | null;
+  yearsOfExperience: number | null;
+  aiScore: number | null;
   createdAt: string;
   jobTitle: string;
   jobSlug: string;
 };
+
+export type HrApplicationListResult = {
+  items: HrApplicationListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  pageCount: number;
+};
+
+export type HrApplicationFilterOptions = {
+  jobs: Array<{ id: string; title: string }>;
+};
+
+export type HrApplicationsFilters = Omit<
+  HrApplicationsSearchParams,
+  never
+>;
+
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -171,23 +198,194 @@ export async function getApplicationById(
   return row ?? null;
 }
 
-export async function listApplicationsForHr(): Promise<HrApplicationListItem[]> {
-  return db
-    .select({
-      id: applications.id,
-      jobId: applications.jobId,
-      fullName: applications.fullName,
-      email: applications.email,
-      status: applications.status,
-      resumePath: applications.resumePath,
-      resumeFileName: applications.resumeFileName,
-      createdAt: applications.createdAt,
-      jobTitle: jobs.title,
-      jobSlug: jobs.slug,
+function sanitizeLikeTerm(value: string | undefined): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const cleaned = value.trim().slice(0, 100).replace(/[%_]/g, " ");
+  return cleaned.length > 0 ? cleaned : undefined;
+}
+
+/** Latest completed AI overall_score for an application (correlated subquery). */
+function latestAiScoreSql() {
+  return sql<string | null>`(
+    SELECT ${aiAnalyses.overallScore}
+    FROM ${aiAnalyses}
+    WHERE ${aiAnalyses.applicationId} = ${applications.id}
+      AND ${aiAnalyses.status} = 'completed'
+      AND ${aiAnalyses.overallScore} IS NOT NULL
+    ORDER BY ${aiAnalyses.createdAt} DESC
+    LIMIT 1
+  )`;
+}
+
+function parseAiScore(value: string | null): number | null {
+  if (value == null || value === "") {
+    return null;
+  }
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function buildHrApplicationConditions(filters: Partial<HrApplicationsFilters>) {
+  const conditions = [];
+
+  const name = sanitizeLikeTerm(filters.name);
+  if (name) {
+    conditions.push(ilike(applications.fullName, `%${name}%`));
+  }
+
+  const email = sanitizeLikeTerm(filters.email);
+  if (email) {
+    conditions.push(ilike(applications.email, `%${email}%`));
+  }
+
+  if (filters.jobId) {
+    conditions.push(eq(applications.jobId, filters.jobId));
+  }
+
+  if (filters.status) {
+    conditions.push(eq(applications.status, filters.status));
+  }
+
+  if (filters.experienceMin != null) {
+    conditions.push(gte(applications.yearsOfExperience, filters.experienceMin));
+  }
+
+  if (filters.experienceMax != null) {
+    conditions.push(lte(applications.yearsOfExperience, filters.experienceMax));
+  }
+
+  if (filters.dateFrom) {
+    conditions.push(
+      gte(applications.createdAt, new Date(`${filters.dateFrom}T00:00:00.000Z`)),
+    );
+  }
+
+  if (filters.dateTo) {
+    conditions.push(
+      lte(applications.createdAt, new Date(`${filters.dateTo}T23:59:59.999Z`)),
+    );
+  }
+
+  const scoreExpr = latestAiScoreSql();
+
+  if (filters.scoreMin != null) {
+    conditions.push(sql`(${scoreExpr})::numeric >= ${filters.scoreMin}`);
+  }
+
+  if (filters.scoreMax != null) {
+    conditions.push(sql`(${scoreExpr})::numeric <= ${filters.scoreMax}`);
+  }
+
+  return conditions;
+}
+
+function resolveHrApplicationOrderBy(
+  sort: HrApplicationsSortField,
+  order: "asc" | "desc",
+) {
+  const direction = order === "asc" ? asc : desc;
+
+  switch (sort) {
+    case "name":
+      return direction(applications.fullName);
+    case "experience":
+      return direction(applications.yearsOfExperience);
+    case "aiScore":
+      return direction(sql`(${latestAiScoreSql()})::numeric`);
+    case "createdAt":
+    default:
+      return direction(applications.createdAt);
+  }
+}
+
+/**
+ * Paginated HR applications list with server-side filters.
+ * Uses indexed columns (status, job, email, created_at, experience) and a
+ * correlated latest-score subquery backed by ai_analyses(application_id, created_at).
+ */
+export async function listApplicationsForHr(
+  filters: Partial<HrApplicationsFilters> = {},
+): Promise<HrApplicationListResult> {
+  const page = filters.page ?? 1;
+  const pageSize = filters.pageSize ?? 20;
+  const sort = filters.sort ?? "createdAt";
+  const order = filters.order ?? "desc";
+  const offset = (page - 1) * pageSize;
+
+  const conditions = buildHrApplicationConditions(filters);
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+  const orderBy = resolveHrApplicationOrderBy(sort, order);
+  const scoreSql = latestAiScoreSql();
+
+  const [rows, totalRow] = await Promise.all([
+    db
+      .select({
+        id: applications.id,
+        jobId: applications.jobId,
+        fullName: applications.fullName,
+        email: applications.email,
+        status: applications.status,
+        resumePath: applications.resumePath,
+        resumeFileName: applications.resumeFileName,
+        yearsOfExperience: applications.yearsOfExperience,
+        aiScore: scoreSql,
+        createdAt: applications.createdAt,
+        jobTitle: jobs.title,
+        jobSlug: jobs.slug,
+      })
+      .from(applications)
+      .innerJoin(jobs, eq(applications.jobId, jobs.id))
+      .where(whereClause)
+      .orderBy(orderBy, desc(applications.createdAt))
+      .limit(pageSize)
+      .offset(offset),
+    db
+      .select({ value: count() })
+      .from(applications)
+      .innerJoin(jobs, eq(applications.jobId, jobs.id))
+      .where(whereClause)
+      .then((result) => result[0]),
+  ]);
+
+  const total = Number(totalRow?.value ?? 0);
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+
+  return {
+    items: rows.map((row) => ({
+      id: row.id,
+      jobId: row.jobId,
+      fullName: row.fullName,
+      email: row.email,
+      status: row.status,
+      resumePath: row.resumePath,
+      resumeFileName: row.resumeFileName,
+      yearsOfExperience: row.yearsOfExperience,
+      aiScore: parseAiScore(row.aiScore),
+      createdAt: row.createdAt,
+      jobTitle: row.jobTitle,
+      jobSlug: row.jobSlug,
+    })),
+    total,
+    page,
+    pageSize,
+    pageCount,
+  };
+}
+
+/** Jobs that already have applications — for filter dropdowns. */
+export async function getHrApplicationFilterOptions(): Promise<HrApplicationFilterOptions> {
+  const rows = await db
+    .selectDistinct({
+      id: jobs.id,
+      title: jobs.title,
     })
     .from(applications)
     .innerJoin(jobs, eq(applications.jobId, jobs.id))
-    .orderBy(desc(applications.createdAt));
+    .orderBy(asc(jobs.title));
+
+  return { jobs: rows };
 }
 
 export function toHrApplicationTableRows(
@@ -201,6 +399,8 @@ export function toHrApplicationTableRows(
     status: row.status,
     resumePath: row.resumePath,
     resumeFileName: row.resumeFileName,
+    yearsOfExperience: row.yearsOfExperience,
+    aiScore: row.aiScore,
     createdAt: row.createdAt.toISOString(),
     jobTitle: row.jobTitle,
     jobSlug: row.jobSlug,
@@ -210,7 +410,9 @@ export function toHrApplicationTableRows(
 export async function listRecentApplicationsForHr(
   limit = 5,
 ): Promise<HrApplicationListItem[]> {
-  return db
+  const scoreSql = latestAiScoreSql();
+
+  const rows = await db
     .select({
       id: applications.id,
       jobId: applications.jobId,
@@ -219,6 +421,8 @@ export async function listRecentApplicationsForHr(
       status: applications.status,
       resumePath: applications.resumePath,
       resumeFileName: applications.resumeFileName,
+      yearsOfExperience: applications.yearsOfExperience,
+      aiScore: scoreSql,
       createdAt: applications.createdAt,
       jobTitle: jobs.title,
       jobSlug: jobs.slug,
@@ -227,6 +431,11 @@ export async function listRecentApplicationsForHr(
     .innerJoin(jobs, eq(applications.jobId, jobs.id))
     .orderBy(desc(applications.createdAt))
     .limit(limit);
+
+  return rows.map((row) => ({
+    ...row,
+    aiScore: parseAiScore(row.aiScore),
+  }));
 }
 
 export async function countApplicationsGroupedByStatus(): Promise<

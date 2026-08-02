@@ -454,21 +454,16 @@ Already configured:
 
 ## Pending work
 
-### Phase 11 — Search & Filters
+### Phase 11 — Search & Filters ✅
 
-Implement advanced filtering.
+HR `/hr/applications` uses **server-side** filters via URL search params + Drizzle:
 
-**Applications** — search / filter by:
+- Name, email (`ilike`), job, status
+- AI score min/max (latest completed `ai_analyses.overall_score`)
+- Experience min/max, submitted date range
+- Paginated results (default 20/page)
 
-- Name
-- Email
-- Job
-- Status
-- AI Score
-- Experience
-- Date
-
-Requirements: **server-side filtering**, fast queries (Drizzle / indexed columns). Current TanStack filters are client-side only.
+Indexes: `applications(created_at)`, `applications(years_of_experience)`, `ai_analyses(application_id, created_at)`. Apply with `npm run db:migrate` (migration `0005_low_guardsmen`).
 
 ### Phase 12 — Analytics
 

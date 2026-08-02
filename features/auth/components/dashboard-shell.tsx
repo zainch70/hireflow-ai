@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 
 import { BrandMark } from "@/components/layouts/brand-mark";
 import { Container } from "@/components/layouts/container";
-import { Badge } from "@/components/ui/badge";
 import { DashboardNav } from "@/features/auth/components/dashboard-nav";
 import { LogoutButton } from "@/features/auth/components/logout-button";
 import { requireHrProfile } from "@/lib/auth";
@@ -10,6 +9,7 @@ import { ROUTES } from "@/constants/routes";
 
 export async function DashboardShell({ children }: { children: ReactNode }) {
   const profile = await requireHrProfile();
+  const roleLabel = profile.role.replaceAll("_", " ");
 
   return (
     <div className="min-h-screen bg-background">
@@ -18,12 +18,6 @@ export async function DashboardShell({ children }: { children: ReactNode }) {
           <div className="flex min-w-0 items-center gap-4 sm:gap-6">
             <BrandMark href={ROUTES.dashboard.root} />
             <DashboardNav className="hidden items-center gap-1 sm:flex" />
-            <Badge
-              variant="secondary"
-              className="hidden border border-border bg-muted/60 font-normal text-muted-foreground md:inline-flex"
-            >
-              {profile.role.toUpperCase()}
-            </Badge>
           </div>
 
           <div className="flex items-center gap-3">
@@ -32,6 +26,10 @@ export async function DashboardShell({ children }: { children: ReactNode }) {
                 {profile.fullName}
               </p>
               <p className="truncate text-xs text-muted-foreground">
+                <span className="capitalize">{roleLabel}</span>
+                <span className="mx-1 text-border" aria-hidden="true">
+                  ·
+                </span>
                 {profile.email}
               </p>
             </div>

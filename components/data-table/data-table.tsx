@@ -26,6 +26,8 @@ type DataTableProps<TData, TValue> = {
   mobileRow?: (row: TData) => ReactNode;
   emptyMessage?: string;
   className?: string;
+  /** Hide built-in client pagination (use when paging on the server). */
+  hidePagination?: boolean;
 };
 
 export function DataTable<TData, TValue>({
@@ -35,6 +37,7 @@ export function DataTable<TData, TValue>({
   mobileRow,
   emptyMessage = "No results.",
   className,
+  hidePagination = false,
 }: DataTableProps<TData, TValue>) {
   const rows = table.getRowModel().rows;
 
@@ -113,7 +116,7 @@ export function DataTable<TData, TValue>({
         </Table>
       </SurfaceCard>
 
-      <DataTablePagination table={table} />
+      {hidePagination ? null : <DataTablePagination table={table} />}
     </div>
   );
 }

@@ -29,7 +29,7 @@ export function DashboardNav({ className, linkClassName }: DashboardNavProps) {
   const pathname = usePathname();
 
   return (
-    <nav className={className} aria-label="HR">
+    <nav className={className} aria-label="Dashboard">
       {navItems.map((item) => {
         const active = isActive(pathname, item.href, item.exact);
 

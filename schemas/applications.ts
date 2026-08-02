@@ -224,3 +224,89 @@ export type UpdateApplicationStatusInput = z.output<
   typeof updateApplicationStatusSchema
 >;
 export type AddApplicationNoteInput = z.output<typeof addApplicationNoteSchema>;
+
+const emptyToUndefined = (value: string | undefined) => {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+};
+
+const optionalIntParam = (min: number, max: number) =>
+  z.preprocess((value) => {
+    if (value === undefined || value === null || value === "") {
+      return undefined;
+    }
+    const n = typeof value === "number" ? value : Number(String(value).trim());
+    return Number.isFinite(n) ? n : value;
+  }, z.number().int().min(min).max(max).optional());
+
+const optionalScoreParam = z.preprocess((value) => {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+  const n = typeof value === "number" ? value : Number(String(value).trim());
+  return Number.isFinite(n) ? n : value;
+}, z.number().min(0).max(100).optional());
+
+export const HR_APPLICATIONS_SORT_FIELDS = [
+  "createdAt",
+  "aiScore",
+  "experience",
+  "name",
+] as const;
+
+export type HrApplicationsSortField =
+  (typeof HR_APPLICATIONS_SORT_FIELDS)[number];
+
+/** URL search params for HR applications list (server-side filters). */
+export const hrApplicationsSearchParamsSchema = z.object({
+  name: z.string().trim().max(100).optional().transform(emptyToUndefined),
+  email: z.string().trim().max(100).optional().transform(emptyToUndefined),
+  jobId: z
+    .string()
+    .trim()
+    .optional()
+    .transform(emptyToUndefined)
+    .pipe(z.string().uuid().optional()),
+  status: z
+    .string()
+    .trim()
+    .optional()
+    .transform(emptyToUndefined)
+    .pipe(z.enum(applicationStatusValues).optional()),
+  scoreMin: optionalScoreParam,
+  scoreMax: optionalScoreParam,
+  experienceMin: optionalIntParam(0, 60),
+  experienceMax: optionalIntParam(0, 60),
+  dateFrom: optionalDate,
+  dateTo: optionalDate,
+  page: z.preprocess((value) => {
+    if (value === undefined || value === null || value === "") {
+      return 1;
+    }
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 1;
+  }, z.number().int().min(1).default(1)),
+  pageSize: z.preprocess((value) => {
+    if (value === undefined || value === null || value === "") {
+      return 20;
+    }
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 20;
+  }, z.number().int().min(5).max(50).default(20)),
+  sort: z.preprocess((value) => {
+    if (value === undefined || value === null || value === "") {
+      return "createdAt";
+    }
+    return value;
+  }, z.enum(HR_APPLICATIONS_SORT_FIELDS).default("createdAt")),
+  order: z.preprocess((value) => {
+    if (value === undefined || value === null || value === "") {
+      return "desc";
+    }
+    return value;
+  }, z.enum(["asc", "desc"]).default("desc")),
+});
+
+export type HrApplicationsSearchParams = z.output<
+  typeof hrApplicationsSearchParamsSchema
+>;
