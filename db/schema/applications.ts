@@ -33,6 +33,8 @@ export const applications = pgTable(
     coverLetter: text("cover_letter"),
     resumePath: text("resume_path"),
     resumeFileName: text("resume_file_name"),
+    /** Plain text extracted from the resume PDF (pdf-parse). Used later for AI screening. */
+    resumeText: text("resume_text"),
     linkedinUrl: text("linkedin_url"),
     portfolioUrl: text("portfolio_url"),
     currentTitle: text("current_title"),

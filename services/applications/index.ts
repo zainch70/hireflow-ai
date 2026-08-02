@@ -27,6 +27,7 @@ import {
   uploadResumeObject,
 } from "@/services/storage";
 import { validateResumeFile } from "@/lib/uploads";
+import { extractPdfText } from "@/lib/pdf/extract-text";
 import { slugify } from "@/utils/slug";
 
 export type Application = typeof applications.$inferSelect;
@@ -185,6 +186,7 @@ export async function submitApplication(input: {
   resume: File;
 }): Promise<{ application: Application; job: PublishedJobDetail }> {
   const validatedResume = await validateResumeFile(input.resume);
+  const extracted = await extractPdfText(validatedResume.bytes);
   const job = await getPublishedJobBySlug(input.jobSlug);
 
   if (!job) {
@@ -274,6 +276,7 @@ export async function submitApplication(input: {
       .set({
         resumePath: storagePath,
         resumeFileName: validatedResume.fileName,
+        resumeText: extracted.text.length > 0 ? extracted.text : null,
       })
       .where(eq(applications.id, application.id))
       .returning();

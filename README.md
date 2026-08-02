@@ -2,7 +2,7 @@
 
 AI-powered careers and recruitment portal. Candidates browse and apply to jobs; HR manages openings, applications, and AI-assisted screening.
 
-> **Status:** Foundation, database schema, **HR authentication**, **Job Opening Management**, **public Careers**, **Candidate Applications**, and **secure PDF resume upload** are in place. AI flows are not built yet.
+> **Status:** Foundation, database schema, **HR authentication**, **Job Opening Management**, **public Careers**, **Candidate Applications**, **secure PDF resume upload**, and **PDF text extraction** are in place. AI flows are not built yet.
 
 ## Tech stack
 
@@ -229,6 +229,7 @@ app/(public)/careers/    # List + detail + apply routes
 - Duplicate apply blocked per job + email
 - Secure resume upload to private Supabase Storage bucket `resumes` (PDF only, max 5 MB)
 - Path stored in `resume_path` / `resume_file_name` — never a public URL
+- Resume text extracted with **pdf-parse** (OCR fallback via Gemini for scanned PDFs) and saved to `resume_text`
 - HR opens resumes via short-lived signed URLs (`/hr/applications`)
 
 ### Storage setup (required once)
@@ -245,7 +246,32 @@ app/(public)/careers/    # List + detail + apply routes
 3. Open `/careers/[slug]` → **Apply for this role** → attach a PDF ≤ 5 MB
 4. Submit → success page
 5. Confirm row in Supabase `applications` (+ education/skills) and object in Storage
-6. Sign in as HR → `/hr/applications` → **View PDF** (signed link)
+6. Confirm `resume_text` is populated on the application row
+7. Sign in as HR → `/hr/applications` → **View PDF** (signed link)
+
+### PDF extraction architecture
+
+```
+Candidate uploads PDF
+        ↓
+validateResumeFile (type/size/magic bytes)     ← lib/uploads
+        ↓
+extractPdfText                                 ← lib/pdf
+  1) pdf-parse embedded text
+  2) if sparse/empty → render pages + Gemini OCR
+        ↓
+Insert application + education + skills        ← services/applications
+        ↓
+Upload PDF to private Storage bucket           ← services/storage
+        ↓
+Update resume_path + resume_file_name + resume_text
+```
+
+- **Binary PDF** stays in Storage (private)
+- **Extracted text** lives in Postgres (`resume_text`) for later AI screening
+- **Next.js:** `serverExternalPackages` + `import "pdf-parse/worker"` so pdfjs runs in Node
+- Password-protected PDFs are rejected with a clear error
+- Scanned/image-only PDFs use Gemini vision OCR (needs `GOOGLE_GENERATIVE_AI_API_KEY`)
 
 ### Key files
 
@@ -254,6 +280,8 @@ features/applications/   # Form, resume download, server actions
 services/applications/   # Submit + HR list + signed URL orchestration
 services/storage/        # Private bucket upload / signed URLs
 lib/uploads/             # PDF meta + magic-byte validation
+lib/pdf/                 # pdf-parse + OCR fallback
+lib/ai/ocr-resume.ts     # Gemini vision OCR for scanned pages
 schemas/applications.ts  # Zod schema
 ```
 
@@ -310,18 +338,19 @@ Already configured:
 - HR authentication (login, logout, middleware, role checks)
 - Job Opening Management (CRUD + publish / unpublish / close)
 - Public Careers pages (published list, detail, search/filter)
-- Candidate applications (form + private PDF resume upload)
+- Candidate applications (form + private PDF resume upload + text extraction)
 - HR applications list with signed resume links
 - Providers (theme, Supabase, toasts)
 - Error / API response helpers
 - Upload validation (PDF type/size/magic bytes)
+- PDF text extraction via pdf-parse + Gemini OCR fallback (`resume_text`)
 - Gemini client factory (no prompts)
 - Routes, roles, and status constants
 
 ## Planned next phases
 
 1. Richer HR application detail / review workflow
-2. AI screening / shortlisting
+2. AI screening / shortlisting (uses stored `resume_text`)
 3. RLS policies on Supabase tables (and Storage policies if needed)
 
 ## License
