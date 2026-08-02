@@ -2,6 +2,7 @@
 
 import {
   cloneElement,
+  useState,
   useTransition,
   type ReactElement,
   type ReactNode,
@@ -29,6 +30,7 @@ import {
   type ApplicationFormInput,
   type ApplicationFormValues,
 } from "@/schemas/applications";
+import { UPLOAD_CONSTRAINTS, validatePdfFileMeta } from "@/lib/uploads";
 import { cn } from "@/lib/utils";
 
 const educationLevelOptions = Object.values(EDUCATION_LEVELS);
@@ -57,6 +59,8 @@ type ApplicationFormProps = {
 export function ApplicationForm({ jobSlug, jobTitle }: ApplicationFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [resumeError, setResumeError] = useState<string | undefined>();
 
   const {
     register,
@@ -84,17 +88,55 @@ export function ApplicationForm({ jobSlug, jobTitle }: ApplicationFormProps) {
   const educationFields = useFieldArray({ control, name: "education" });
   const skillFields = useFieldArray({ control, name: "skills" });
 
+  function onResumeChange(fileList: FileList | null) {
+    const file = fileList?.[0] ?? null;
+    setResumeError(undefined);
+
+    if (!file) {
+      setResumeFile(null);
+      return;
+    }
+
+    const meta = validatePdfFileMeta({
+      mimeType: file.type,
+      sizeBytes: file.size,
+      fileName: file.name,
+    });
+
+    if (!meta.valid) {
+      setResumeFile(null);
+      setResumeError(meta.reason);
+      toast.error(meta.reason);
+      return;
+    }
+
+    setResumeFile(file);
+  }
+
   const onSubmit = handleSubmit((values) => {
+    if (!resumeFile) {
+      setResumeError("Resume PDF is required");
+      toast.error("Please attach a PDF resume");
+      return;
+    }
+
     startTransition(async () => {
-      const result = await submitApplicationAction(jobSlug, values);
+      const result = await submitApplicationAction(jobSlug, values, resumeFile);
 
       if (result.fieldErrors) {
         for (const [field, messages] of Object.entries(result.fieldErrors)) {
-          if (messages?.[0]) {
-            setError(field as keyof ApplicationFormValues, {
-              message: messages[0],
-            });
+          if (!messages?.[0]) {
+            continue;
           }
+
+          if (field === "resume") {
+            setResumeError(messages[0]);
+            continue;
+          }
+
+          setError(field as keyof ApplicationFormValues, {
+            message: messages[0],
+          });
         }
         return;
       }
@@ -245,6 +287,58 @@ export function ApplicationForm({ jobSlug, jobTitle }: ApplicationFormProps) {
               {...register("portfolioUrl")}
             />
           </Field>
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="Resume"
+        description={`PDF only, max ${UPLOAD_CONSTRAINTS.maxFileSizeBytes / (1024 * 1024)} MB. Stored privately — not publicly accessible.`}
+      >
+        <div className="min-w-0 space-y-2.5">
+          <Label htmlFor="resume" className="gap-1 leading-snug">
+            <span>Resume</span>
+            <span className="text-destructive" aria-hidden="true">
+              *
+            </span>
+            <span className="sr-only">(required)</span>
+          </Label>
+          <input
+            id="resume"
+            type="file"
+            accept="application/pdf,.pdf"
+            required
+            aria-required="true"
+            aria-invalid={Boolean(resumeError) || undefined}
+            aria-describedby={resumeError ? "resume-error" : undefined}
+            disabled={isPending}
+            className={cn(
+              "block w-full min-w-0 cursor-pointer rounded-xl border border-input bg-card px-3 py-2.5 text-sm outline-none transition-colors",
+              "file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-foreground",
+              "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/35",
+              "disabled:cursor-not-allowed disabled:opacity-50",
+              resumeError && "border-destructive ring-3 ring-destructive/20",
+            )}
+            onChange={(event) => onResumeChange(event.target.files)}
+          />
+          {resumeFile ? (
+            <p className="text-xs text-muted-foreground">
+              Selected: {resumeFile.name} (
+              {(resumeFile.size / (1024 * 1024)).toFixed(2)} MB)
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Choose a PDF file to upload with your application.
+            </p>
+          )}
+          {resumeError ? (
+            <p
+              id="resume-error"
+              className="text-sm text-destructive"
+              role="alert"
+            >
+              {resumeError}
+            </p>
+          ) : null}
         </div>
       </FormSection>
 

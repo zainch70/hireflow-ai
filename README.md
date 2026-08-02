@@ -2,7 +2,7 @@
 
 AI-powered careers and recruitment portal. Candidates browse and apply to jobs; HR manages openings, applications, and AI-assisted screening.
 
-> **Status:** Foundation, database schema, **HR authentication**, **Job Opening Management**, **public Careers**, and **Candidate Applications** (no CV upload yet) are in place. AI flows are not built yet.
+> **Status:** Foundation, database schema, **HR authentication**, **Job Opening Management**, **public Careers**, **Candidate Applications**, and **secure PDF resume upload** are in place. AI flows are not built yet.
 
 ## Tech stack
 
@@ -146,6 +146,7 @@ npm run dev
 | [http://localhost:3000/login](http://localhost:3000/login) | HR sign in |
 | [http://localhost:3000/hr](http://localhost:3000/hr) | HR overview |
 | [http://localhost:3000/hr/jobs](http://localhost:3000/hr/jobs) | Manage job openings |
+| [http://localhost:3000/hr/applications](http://localhost:3000/hr/applications) | Review applications / open resumes |
 
 ## Authentication (for team members)
 
@@ -222,24 +223,37 @@ app/(public)/careers/    # List + detail + apply routes
 
 ### What exists
 
-- Public apply form: personal, professional, education (multi), skills, experience, additional notes
+- Public apply form: personal, professional, education (multi), skills, experience, resume PDF, additional notes
 - Zod + React Hook Form + Server Action
 - Persists to `applications`, `application_education`, `application_skills` (skills catalog upsert)
 - Duplicate apply blocked per job + email
-- **No CV upload yet**
+- Secure resume upload to private Supabase Storage bucket `resumes` (PDF only, max 5 MB)
+- Path stored in `resume_path` / `resume_file_name` — never a public URL
+- HR opens resumes via short-lived signed URLs (`/hr/applications`)
+
+### Storage setup (required once)
+
+1. Supabase Dashboard → **Storage** → **New bucket**
+2. Name: `resumes`
+3. **Private** (do not enable public access)
+4. Leave policies empty for now — uploads/signed URLs use the service-role server client
 
 ### How to test
 
-1. Publish a job in HR
-2. Open `/careers/[slug]` → **Apply for this role**
-3. Submit the form → success page
-4. Confirm row in Supabase `applications` (+ education/skills)
+1. Create the private `resumes` bucket (above)
+2. Publish a job in HR
+3. Open `/careers/[slug]` → **Apply for this role** → attach a PDF ≤ 5 MB
+4. Submit → success page
+5. Confirm row in Supabase `applications` (+ education/skills) and object in Storage
+6. Sign in as HR → `/hr/applications` → **View PDF** (signed link)
 
 ### Key files
 
 ```
-features/applications/   # Form + server action
-services/applications/   # Submit transaction
+features/applications/   # Form, resume download, server actions
+services/applications/   # Submit + HR list + signed URL orchestration
+services/storage/        # Private bucket upload / signed URLs
+lib/uploads/             # PDF meta + magic-byte validation
 schemas/applications.ts  # Zod schema
 ```
 
@@ -296,19 +310,19 @@ Already configured:
 - HR authentication (login, logout, middleware, role checks)
 - Job Opening Management (CRUD + publish / unpublish / close)
 - Public Careers pages (published list, detail, search/filter)
-- Candidate applications (form + DB persist; no CV upload)
+- Candidate applications (form + private PDF resume upload)
+- HR applications list with signed resume links
 - Providers (theme, Supabase, toasts)
 - Error / API response helpers
-- Upload validation stubs (PDF)
+- Upload validation (PDF type/size/magic bytes)
 - Gemini client factory (no prompts)
 - Routes, roles, and status constants
 
 ## Planned next phases
 
-1. CV / resume upload on applications
-2. HR applications inbox + review
-3. AI screening / shortlisting
-4. RLS policies on Supabase tables
+1. Richer HR application detail / review workflow
+2. AI screening / shortlisting
+3. RLS policies on Supabase tables (and Storage policies if needed)
 
 ## License
 

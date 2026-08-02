@@ -127,7 +127,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <ApplyButton jobSlug={job.slug} />
                 <p className="text-sm text-muted-foreground">
-                  Takes a few minutes — CV upload comes later.
+                  Includes a private PDF resume upload.
                 </p>
               </div>
             </div>
@@ -173,8 +173,8 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
                 Ready to apply?
               </h2>
               <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                Share your background, education, and skills. CV upload will be
-                available in a later update.
+                Share your background and upload a PDF resume. Files are stored
+                privately and only HR can open them via signed links.
               </p>
               <div className="mt-5">
                 <ApplyButton jobSlug={job.slug} />

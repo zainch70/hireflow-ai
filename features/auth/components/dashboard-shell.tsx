@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: ROUTES.dashboard.root, label: "Overview" },
   { href: ROUTES.dashboard.jobs, label: "Jobs" },
+  { href: ROUTES.dashboard.applications, label: "Applications" },
 ] as const;
 
 export async function DashboardShell({ children }: { children: ReactNode }) {

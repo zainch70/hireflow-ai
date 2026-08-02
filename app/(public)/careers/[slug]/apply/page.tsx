@@ -60,7 +60,7 @@ export default async function ApplyPage({ params }: ApplyPageProps) {
               </Link>
               <PageHeader
                 title={`Apply for ${job.title}`}
-                description="Complete the form below. CV upload will be available in a later step — you can still submit now."
+                description="Complete the form and attach a PDF resume (max 5 MB)."
               />
               <p className="text-sm leading-relaxed text-muted-foreground">
                 Applying via{" "}

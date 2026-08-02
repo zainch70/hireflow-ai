@@ -28,6 +28,7 @@ function toFieldErrors(
 export async function submitApplicationAction(
   jobSlug: string,
   input: unknown,
+  resume: File | null,
 ): Promise<ApplicationActionResult> {
   const parsed = applicationFormSchema.safeParse(input);
 
@@ -37,15 +38,25 @@ export async function submitApplicationAction(
     };
   }
 
+  if (!resume) {
+    return {
+      fieldErrors: {
+        resume: ["Resume PDF is required"],
+      },
+    };
+  }
+
   try {
     const { application } = await submitApplication({
       jobSlug,
       data: parsed.data,
+      resume,
     });
 
     revalidatePath(ROUTES.careers);
     revalidatePath(careersJobPath(jobSlug));
     revalidatePath(careersApplyPath(jobSlug));
+    revalidatePath(ROUTES.dashboard.applications);
 
     return { applicationId: application.id };
   } catch (error) {

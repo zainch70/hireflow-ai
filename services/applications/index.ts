@@ -1,10 +1,11 @@
-import { inArray } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
   applicationEducation,
   applicationSkills,
   applications,
+  jobs,
   skills,
 } from "@/db/schema";
 import { APPLICATION_STATUS } from "@/constants/application-status";
@@ -18,9 +19,29 @@ import {
   duplicateApplicationError,
   isUniqueViolation,
 } from "@/services/applications/errors";
+import { resumeNotFoundError } from "@/services/storage/errors";
+import {
+  buildResumeStoragePath,
+  createResumeSignedUrl,
+  deleteResumeObject,
+  uploadResumeObject,
+} from "@/services/storage";
+import { validateResumeFile } from "@/lib/uploads";
 import { slugify } from "@/utils/slug";
 
 export type Application = typeof applications.$inferSelect;
+
+export type HrApplicationListItem = {
+  id: string;
+  fullName: string;
+  email: string;
+  status: Application["status"];
+  resumePath: string | null;
+  resumeFileName: string | null;
+  createdAt: Date;
+  jobTitle: string;
+  jobSlug: string;
+};
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -85,7 +106,6 @@ async function resolveApplicationSkills(
         throw error;
       }
 
-      // Concurrent insert race — re-read all requested slugs.
       const refetched = await tx
         .select({ id: skills.id, slug: skills.slug })
         .from(skills)
@@ -111,18 +131,70 @@ async function resolveApplicationSkills(
   });
 }
 
+export async function getApplicationById(
+  applicationId: string,
+): Promise<Application | null> {
+  const [row] = await db
+    .select()
+    .from(applications)
+    .where(eq(applications.id, applicationId))
+    .limit(1);
+
+  return row ?? null;
+}
+
+export async function listApplicationsForHr(): Promise<HrApplicationListItem[]> {
+  return db
+    .select({
+      id: applications.id,
+      fullName: applications.fullName,
+      email: applications.email,
+      status: applications.status,
+      resumePath: applications.resumePath,
+      resumeFileName: applications.resumeFileName,
+      createdAt: applications.createdAt,
+      jobTitle: jobs.title,
+      jobSlug: jobs.slug,
+    })
+    .from(applications)
+    .innerJoin(jobs, eq(applications.jobId, jobs.id))
+    .orderBy(desc(applications.createdAt));
+}
+
+/** HR-only: short-lived signed URL for a private resume. */
+export async function getApplicationResumeDownloadUrl(
+  applicationId: string,
+): Promise<{ url: string; fileName: string }> {
+  const application = await getApplicationById(applicationId);
+
+  if (!application?.resumePath) {
+    throw resumeNotFoundError();
+  }
+
+  const url = await createResumeSignedUrl(application.resumePath, 60);
+
+  return {
+    url,
+    fileName: application.resumeFileName ?? "resume.pdf",
+  };
+}
+
 export async function submitApplication(input: {
   jobSlug: string;
   data: ApplicationFormInput;
+  resume: File;
 }): Promise<{ application: Application; job: PublishedJobDetail }> {
+  const validatedResume = await validateResumeFile(input.resume);
   const job = await getPublishedJobBySlug(input.jobSlug);
 
   if (!job) {
     throw applicationNotAllowedError();
   }
 
+  let application: Application;
+
   try {
-    const application = await db.transaction(async (tx) => {
+    application = await db.transaction(async (tx) => {
       const [created] = await tx
         .insert(applications)
         .values({
@@ -177,13 +249,46 @@ export async function submitApplication(input: {
 
       return created;
     });
-
-    return { application, job };
   } catch (error) {
     if (isUniqueViolation(error)) {
       throw duplicateApplicationError();
     }
 
+    throw error;
+  }
+
+  const storagePath = buildResumeStoragePath({
+    jobId: job.id,
+    applicationId: application.id,
+  });
+
+  try {
+    await uploadResumeObject({
+      path: storagePath,
+      bytes: validatedResume.bytes,
+      contentType: validatedResume.mimeType,
+    });
+
+    const [updated] = await db
+      .update(applications)
+      .set({
+        resumePath: storagePath,
+        resumeFileName: validatedResume.fileName,
+      })
+      .where(eq(applications.id, application.id))
+      .returning();
+
+    if (!updated) {
+      throw new Error("Failed to save resume path");
+    }
+
+    return { application: updated, job };
+  } catch (error) {
+    await deleteResumeObject(storagePath).catch(() => undefined);
+    await db
+      .delete(applications)
+      .where(eq(applications.id, application.id))
+      .catch(() => undefined);
     throw error;
   }
 }
