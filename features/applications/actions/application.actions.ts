@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { careersApplyPath, careersJobPath, ROUTES } from "@/constants/routes";
+import { careersApplyPath, careersJobPath } from "@/constants/routes";
 import { revalidateAfterApplicationChange } from "@/lib/cache/tags";
 import { toErrorMessage, zodIssuesToFieldErrors } from "@/lib/errors";
 import { applicationFormSchema } from "@/schemas/applications";
@@ -38,7 +38,6 @@ export async function submitApplicationAction(
     });
 
     revalidateAfterApplicationChange(application.id);
-    revalidatePath(ROUTES.careers);
     revalidatePath(careersJobPath(jobSlug));
     revalidatePath(careersApplyPath(jobSlug));
 
