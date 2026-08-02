@@ -5,6 +5,11 @@ import { revalidatePath } from "next/cache";
 import { careersApplyPath, careersJobPath } from "@/constants/routes";
 import { revalidateAfterApplicationChange } from "@/lib/cache/tags";
 import { toErrorMessage, zodIssuesToFieldErrors } from "@/lib/errors";
+import {
+  enforceRateLimit,
+  getRequestClientIp,
+  RATE_LIMITS,
+} from "@/lib/rate-limit";
 import { applicationFormSchema } from "@/schemas/applications";
 import { submitApplication } from "@/services/applications";
 import type { ApplicationActionResult } from "@/services/applications/errors";
@@ -31,6 +36,13 @@ export async function submitApplicationAction(
   }
 
   try {
+    const ip = await getRequestClientIp();
+    await enforceRateLimit({
+      key: `apply:ip:${ip}`,
+      limit: RATE_LIMITS.apply.limit,
+      windowMs: RATE_LIMITS.apply.windowMs,
+    });
+
     const { application } = await submitApplication({
       jobSlug,
       data: parsed.data,

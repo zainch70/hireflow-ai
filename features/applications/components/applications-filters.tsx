@@ -181,6 +181,66 @@ export function ApplicationsFilters({
           />
         </div>
 
+        <div className="space-y-2">
+          <Label htmlFor="apps-location">Location</Label>
+          <Input
+            id="apps-location"
+            name="location"
+            type="search"
+            placeholder="City or region…"
+            defaultValue={values.location ?? ""}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="apps-skill">Skill</Label>
+          <Input
+            id="apps-skill"
+            name="skill"
+            type="search"
+            placeholder="e.g. React"
+            defaultValue={values.skill ?? ""}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="apps-qualification">Qualification</Label>
+          <Input
+            id="apps-qualification"
+            name="qualification"
+            type="search"
+            placeholder="Degree or field…"
+            defaultValue={values.qualification ?? ""}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="apps-grad-year">Graduation year</Label>
+          <Input
+            id="apps-grad-year"
+            name="graduationYear"
+            type="number"
+            min={1950}
+            max={2100}
+            step={1}
+            placeholder="2024"
+            defaultValue={values.graduationYear ?? ""}
+          />
+        </div>
+
+        <div className="flex items-end sm:col-span-2 lg:col-span-2">
+          <label className="flex items-center gap-2 text-sm text-foreground">
+            <input
+              type="checkbox"
+              name="includeArchived"
+              value="1"
+              defaultChecked={values.includeArchived}
+              className="size-4 rounded border-input"
+            />
+            Include archived
+          </label>
+        </div>
+
         <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-2 lg:justify-end">
           {hasFilters ? (
             <ButtonLink

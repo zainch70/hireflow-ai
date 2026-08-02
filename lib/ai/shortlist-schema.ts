@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const AI_SHORTLIST_PROMPT_VERSION = "shortlist-v2";
+export const AI_SHORTLIST_PROMPT_VERSION = "shortlist-v3";
 
 export const AI_RECOMMENDATIONS = [
   "strong_match",

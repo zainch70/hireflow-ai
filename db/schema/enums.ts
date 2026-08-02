@@ -54,6 +54,14 @@ export const educationLevelEnum = pgEnum("education_level", [
   "other",
 ]);
 
+export const employmentStatusEnum = pgEnum("employment_status", [
+  "employed",
+  "unemployed",
+  "freelance",
+  "student",
+  "other",
+]);
+
 export const criterionTypeEnum = pgEnum("criterion_type", [
   "skill",
   "experience_years",

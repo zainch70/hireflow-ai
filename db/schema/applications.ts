@@ -1,13 +1,15 @@
 import {
+  boolean,
   index,
   integer,
   pgTable,
   text,
+  timestamp,
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { applicationStatusEnum } from "./enums";
+import { applicationStatusEnum, employmentStatusEnum, timestampConfig } from "./enums";
 import { timestamps } from "./timestamps";
 import { jobs } from "./jobs";
 import { profiles } from "./profiles";
@@ -30,6 +32,7 @@ export const applications = pgTable(
     fullName: text("full_name").notNull(),
     email: text("email").notNull(),
     phone: text("phone"),
+    currentLocation: text("current_location"),
     coverLetter: text("cover_letter"),
     resumePath: text("resume_path"),
     resumeFileName: text("resume_file_name"),
@@ -37,10 +40,25 @@ export const applications = pgTable(
     resumeText: text("resume_text"),
     linkedinUrl: text("linkedin_url"),
     portfolioUrl: text("portfolio_url"),
+    githubUrl: text("github_url"),
     currentTitle: text("current_title"),
+    currentCompany: text("current_company"),
     yearsOfExperience: integer("years_of_experience"),
+    expectedSalary: text("expected_salary"),
+    noticePeriod: text("notice_period"),
+    employmentStatus: employmentStatusEnum("employment_status"),
+    interestReason: text("interest_reason"),
+    whyConsider: text("why_consider"),
+    willingOnsite: boolean("willing_onsite"),
+    availableJoinDate: text("available_join_date"),
     /** Free-text professional experience narrative (no structured work-history table yet). */
     workExperience: text("work_experience"),
+    /** HR owner for this application (optional). */
+    assignedToId: uuid("assigned_to_id").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+    /** Soft-archive timestamp — hidden from default HR lists when set. */
+    archivedAt: timestamp("archived_at", timestampConfig),
     status: applicationStatusEnum("status").notNull().default("submitted"),
     source: text("source").default("careers_portal"),
     ...timestamps,
@@ -52,6 +70,8 @@ export const applications = pgTable(
     index("applications_email_idx").on(table.email),
     index("applications_created_at_idx").on(table.createdAt),
     index("applications_years_experience_idx").on(table.yearsOfExperience),
+    index("applications_assigned_to_idx").on(table.assignedToId),
+    index("applications_archived_at_idx").on(table.archivedAt),
     uniqueIndex("applications_job_email_uidx").on(table.jobId, table.email),
   ],
 );

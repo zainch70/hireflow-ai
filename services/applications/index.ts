@@ -28,8 +28,15 @@ export {
 } from "@/services/applications/list";
 export {
   addApplicationNote,
+  assignApplication,
+  deleteApplication,
   getApplicationDetailForHr,
   getApplicationResumeDownloadUrl,
+  setApplicationArchived,
   updateApplicationStatus,
 } from "@/services/applications/detail";
 export { submitApplication } from "@/services/applications/submit";
+export {
+  countApplicationsByJob,
+  type ApplicationsByJobCount,
+} from "@/services/applications/analytics";

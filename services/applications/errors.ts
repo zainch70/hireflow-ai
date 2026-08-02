@@ -26,6 +26,13 @@ export function applicationNotFoundError() {
   });
 }
 
+export function assigneeNotFoundError() {
+  return new AppError("Assignee not found", {
+    code: "ASSIGNEE_NOT_FOUND",
+    statusCode: 404,
+  });
+}
+
 export function invalidApplicationTransitionError(from: string, to: string) {
   return new AppError(`Cannot change status from ${from} to ${to}`, {
     code: "INVALID_APPLICATION_TRANSITION",

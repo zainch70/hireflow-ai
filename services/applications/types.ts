@@ -81,6 +81,7 @@ export type HrApplicationEducation = {
 export type HrApplicationSkill = {
   id: string;
   name: string;
+  category: string | null;
   proficiency: string | null;
 };
 
@@ -88,6 +89,8 @@ export type HrApplicationDetail = {
   application: Application;
   jobTitle: string;
   jobSlug: string;
+  assigneeName: string | null;
+  assigneeEmail: string | null;
   education: HrApplicationEducation[];
   skills: HrApplicationSkill[];
   notes: HrApplicationNote[];

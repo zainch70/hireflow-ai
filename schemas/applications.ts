@@ -1,7 +1,9 @@
 import { z } from "zod";
 
 import { APPLICATION_STATUS } from "@/constants/application-status";
+import { SKILL_CATEGORIES } from "@/constants/skill-category";
 import { EDUCATION_LEVELS } from "@/constants/education-level";
+import { EMPLOYMENT_STATUSES } from "@/constants/employment-status";
 
 const educationLevelValues = [
   EDUCATION_LEVELS.HIGH_SCHOOL,
@@ -12,6 +14,14 @@ const educationLevelValues = [
   EDUCATION_LEVELS.OTHER,
 ] as const;
 
+const employmentStatusValues = [
+  EMPLOYMENT_STATUSES.EMPLOYED,
+  EMPLOYMENT_STATUSES.UNEMPLOYED,
+  EMPLOYMENT_STATUSES.FREELANCE,
+  EMPLOYMENT_STATUSES.STUDENT,
+  EMPLOYMENT_STATUSES.OTHER,
+] as const;
+
 const optionalUrl = z
   .string()
   .trim()
@@ -19,25 +29,21 @@ const optionalUrl = z
   .transform((value) => (value ? value : undefined))
   .pipe(z.string().url("Enter a valid URL").optional());
 
-const optionalPhone = z
+const requiredPhone = z
   .string()
   .trim()
-  .optional()
-  .transform((value) => (value ? value : undefined))
-  .pipe(
-    z
-      .string()
-      .min(7, "Phone number looks too short")
-      .max(30, "Phone number is too long")
-      .optional(),
-  );
+  .min(7, "Phone number looks too short")
+  .max(30, "Phone number is too long");
 
-const optionalYears = z
+const requiredYears = z
   .union([z.string(), z.number()])
-  .optional()
   .transform((value, ctx) => {
     if (value === undefined || value === "") {
-      return undefined;
+      ctx.addIssue({
+        code: "custom",
+        message: "Years of experience is required",
+      });
+      return z.NEVER;
     }
 
     const parsed = typeof value === "number" ? value : Number(value);
@@ -99,6 +105,13 @@ export const educationEntrySchema = z
       .transform((value) => (value ? value : undefined)),
     startDate: optionalDate,
     endDate: optionalDate,
+    graduationYear: z.preprocess((value) => {
+      if (value === undefined || value === null || value === "") {
+        return undefined;
+      }
+      const n = typeof value === "number" ? value : Number(String(value).trim());
+      return Number.isFinite(n) ? n : value;
+    }, z.number().int().min(1950).max(2100).optional()),
     isCurrent: z.boolean().default(false),
     grade: z
       .string()
@@ -108,6 +121,14 @@ export const educationEntrySchema = z
       .transform((value) => (value ? value : undefined)),
   })
   .superRefine((entry, ctx) => {
+    if (!entry.isCurrent && entry.graduationYear == null && !entry.endDate) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["graduationYear"],
+        message: "Graduation year is required (or mark as currently studying)",
+      });
+    }
+
     if (
       !entry.isCurrent &&
       entry.startDate &&
@@ -122,12 +143,24 @@ export const educationEntrySchema = z
     }
   });
 
+const skillCategoryValues = [
+  SKILL_CATEGORIES.TECHNICAL,
+  SKILL_CATEGORIES.SOFTWARE,
+  SKILL_CATEGORIES.LANGUAGES,
+  SKILL_CATEGORIES.AI_TOOLS,
+  SKILL_CATEGORIES.SOFT_SKILLS,
+  SKILL_CATEGORIES.OTHER,
+] as const;
+
 export const skillEntrySchema = z.object({
   name: z
     .string()
     .trim()
     .min(1, "Skill name is required")
     .max(60, "Skill name is too long"),
+  category: z.enum(skillCategoryValues, {
+    message: "Select a skill category",
+  }),
   proficiency: z
     .string()
     .trim()
@@ -148,16 +181,41 @@ export const applicationFormSchema = z.object({
     .min(1, "Email is required")
     .email("Enter a valid email")
     .max(254, "Email is too long"),
-  phone: optionalPhone,
+  phone: requiredPhone,
+  currentLocation: z
+    .string()
+    .trim()
+    .min(1, "Current location is required")
+    .max(120, "Location is too long"),
   currentTitle: z
     .string()
     .trim()
-    .max(120, "Title is too long")
+    .min(1, "Current job title is required")
+    .max(120, "Title is too long"),
+  currentCompany: z
+    .string()
+    .trim()
+    .max(120, "Company name is too long")
     .optional()
     .transform((value) => (value ? value : undefined)),
   linkedinUrl: optionalUrl,
   portfolioUrl: optionalUrl,
-  yearsOfExperience: optionalYears,
+  githubUrl: optionalUrl,
+  yearsOfExperience: requiredYears,
+  expectedSalary: z
+    .string()
+    .trim()
+    .max(80, "Expected salary is too long")
+    .optional()
+    .transform((value) => (value ? value : undefined)),
+  noticePeriod: z
+    .string()
+    .trim()
+    .min(1, "Notice period is required")
+    .max(80, "Notice period is too long"),
+  employmentStatus: z.enum(employmentStatusValues, {
+    message: "Select your employment status",
+  }),
   education: z
     .array(educationEntrySchema)
     .min(1, "Add at least one education entry")
@@ -171,6 +229,22 @@ export const applicationFormSchema = z.object({
     .trim()
     .min(1, "Experience is required")
     .max(8000, "Experience is too long"),
+  interestReason: z
+    .string()
+    .trim()
+    .min(1, "Tell us why you are interested")
+    .max(4000, "Response is too long"),
+  whyConsider: z
+    .string()
+    .trim()
+    .min(1, "Tell us why we should consider you")
+    .max(4000, "Response is too long"),
+  willingOnsite: z.boolean(),
+  availableJoinDate: z
+    .string()
+    .trim()
+    .min(1, "Available joining date is required")
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Use a valid date"),
   coverLetter: z
     .string()
     .trim()
@@ -218,6 +292,30 @@ export const addApplicationNoteSchema = z.object({
     .trim()
     .min(1, "Note is required")
     .max(4000, "Note is too long"),
+});
+
+export const assignApplicationSchema = z.object({
+  applicationId: z.string().uuid("Invalid application id"),
+  assigneeId: z
+    .string()
+    .uuid("Invalid assignee")
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null),
+});
+
+export const setApplicationArchivedSchema = z.object({
+  applicationId: z.string().uuid("Invalid application id"),
+  archived: z.boolean(),
+});
+
+export const deleteApplicationSchema = z.object({
+  applicationId: z.string().uuid("Invalid application id"),
+});
+
+export const decideAiShortlistSchema = z.object({
+  applicationId: z.string().uuid("Invalid application id"),
+  decision: z.enum(["accept", "reject"]),
 });
 
 export type UpdateApplicationStatusInput = z.output<
@@ -279,6 +377,25 @@ export const hrApplicationsSearchParamsSchema = z.object({
   experienceMax: optionalIntParam(0, 60),
   dateFrom: optionalDate,
   dateTo: optionalDate,
+  location: z.string().trim().max(100).optional().transform(emptyToUndefined),
+  skill: z.string().trim().max(60).optional().transform(emptyToUndefined),
+  qualification: z
+    .string()
+    .trim()
+    .max(100)
+    .optional()
+    .transform(emptyToUndefined),
+  graduationYear: optionalIntParam(1950, 2100),
+  includeArchived: z.preprocess((value) => {
+    if (value === undefined || value === null || value === "") {
+      return false;
+    }
+    if (typeof value === "boolean") {
+      return value;
+    }
+    const normalized = String(value).trim().toLowerCase();
+    return normalized === "1" || normalized === "true" || normalized === "on";
+  }, z.boolean().default(false)),
   page: z.preprocess((value) => {
     if (value === undefined || value === null || value === "") {
       return 1;

@@ -4,7 +4,6 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { profiles } from "@/db/schema";
 import { ROLES } from "@/constants/roles";
-import { parseRole } from "@/lib/auth/roles";
 import type { User } from "@supabase/supabase-js";
 
 export type Profile = typeof profiles.$inferSelect;
@@ -24,7 +23,8 @@ export const getProfileById = cache(
 
 /**
  * Ensures a profiles row exists for the auth user.
- * Role comes from auth user_metadata.role when present (for future provisioning).
+ * New profiles always start as `candidate` — never trust Auth
+ * `user_metadata.role` for privilege (HR/admin must be set in DB).
  */
 export async function ensureProfile(user: User): Promise<Profile> {
   const existing = await getProfileById(user.id);
@@ -39,7 +39,6 @@ export async function ensureProfile(user: User): Promise<Profile> {
     throw new Error("Authenticated user is missing an email address");
   }
 
-  const role = parseRole(user.user_metadata?.role, ROLES.CANDIDATE);
   const fullName =
     typeof user.user_metadata?.full_name === "string" &&
     user.user_metadata.full_name.trim().length > 0
@@ -52,7 +51,7 @@ export async function ensureProfile(user: User): Promise<Profile> {
       id: user.id,
       email,
       fullName,
-      role,
+      role: ROLES.CANDIDATE,
     })
     .onConflictDoNothing()
     .returning();

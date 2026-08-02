@@ -18,6 +18,7 @@ import {
   type AiRecommendation,
 } from "@/lib/ai/shortlist-schema";
 import { runAiShortlistingAction } from "@/features/applications/actions/ai.actions";
+import { decideAiShortlistAction } from "@/features/applications/actions/management.actions";
 import { formatDateTime } from "@/lib/dates";
 import type { AiShortlistView } from "@/services/ai";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,8 @@ import { cn } from "@/lib/utils";
 type AiShortlistPanelProps = {
   applicationId: string;
   analysis: AiShortlistView | null;
+  canAccept: boolean;
+  canReject: boolean;
 };
 
 function scoreTone(score: number | null) {
@@ -77,8 +80,11 @@ function recommendationStyle(value: AiRecommendation | null) {
 export function AiShortlistPanel({
   applicationId,
   analysis,
+  canAccept,
+  canReject,
 }: AiShortlistPanelProps) {
   const [pending, startTransition] = useTransition();
+  const [decisionPending, startDecision] = useTransition();
 
   function handleRun() {
     startTransition(async () => {
@@ -93,8 +99,28 @@ export function AiShortlistPanel({
     });
   }
 
+  function handleDecision(decision: "accept" | "reject") {
+    startDecision(async () => {
+      const result = await decideAiShortlistAction({
+        applicationId,
+        decision,
+      });
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(
+        decision === "accept"
+          ? "Candidate selected from AI shortlist"
+          : "Candidate rejected after AI review",
+      );
+    });
+  }
+
   const isProcessing =
     pending || analysis?.status === "processing" || analysis?.status === "pending";
+  const showDecision =
+    analysis?.status === "completed" && (canAccept || canReject);
 
   return (
     <div className="space-y-5">
@@ -228,6 +254,33 @@ export function AiShortlistPanel({
               empty="None listed"
             />
           </div>
+
+          {showDecision ? (
+            <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+              {canAccept ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={decisionPending || isProcessing}
+                  onClick={() => handleDecision("accept")}
+                >
+                  Accept shortlist
+                </Button>
+              ) : null}
+              {canReject ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={decisionPending || isProcessing}
+                  onClick={() => handleDecision("reject")}
+                  className="border-red-300/80 text-red-800 hover:bg-red-50 dark:border-red-800 dark:text-red-200 dark:hover:bg-red-950/40"
+                >
+                  Reject candidate
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

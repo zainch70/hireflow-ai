@@ -88,6 +88,13 @@ export function buildApplicationsQueryString(
   setIf("experienceMax", merged.experienceMax);
   setIf("dateFrom", merged.dateFrom);
   setIf("dateTo", merged.dateTo);
+  setIf("location", merged.location);
+  setIf("skill", merged.skill);
+  setIf("qualification", merged.qualification);
+  setIf("graduationYear", merged.graduationYear);
+  if (merged.includeArchived) {
+    params.set("includeArchived", "1");
+  }
 
   if (merged.sort !== "createdAt") {
     params.set("sort", merged.sort);
@@ -119,6 +126,11 @@ export function hasActiveApplicationFilters(
       values.experienceMin != null ||
       values.experienceMax != null ||
       values.dateFrom ||
-      values.dateTo,
+      values.dateTo ||
+      values.location ||
+      values.skill ||
+      values.qualification ||
+      values.graduationYear != null ||
+      values.includeArchived,
   );
 }
