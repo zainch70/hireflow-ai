@@ -14,6 +14,9 @@ import {
   listPublishedJobs,
 } from "@/services/jobs";
 
+/** Careers listing hits the DB; avoid prerender at build time. */
+export const dynamic = "force-dynamic";
+
 type CareersPageProps = {
   searchParams: Promise<{
     q?: string;
