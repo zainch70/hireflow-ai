@@ -81,11 +81,9 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
             }
             disabled={isPending}
           />
-          <Button
+          <button
             type="button"
-            variant="ghost"
-            size="icon"
-            className="absolute top-1/2 right-1 size-8 -translate-y-1/2 text-muted-foreground hover:bg-transparent hover:text-foreground"
+            className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-xl text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:text-foreground disabled:pointer-events-none disabled:opacity-50"
             onClick={() => setShowPassword((open) => !open)}
             disabled={isPending}
             aria-label={showPassword ? "Hide password" : "Show password"}
@@ -97,7 +95,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
             ) : (
               <Eye className="size-4" aria-hidden="true" />
             )}
-          </Button>
+          </button>
         </div>
         {state.fieldErrors?.password?.[0] ? (
           <p
